@@ -1,7 +1,7 @@
 export type NavNode = {
   slug: string;
   label: string;
-  blurb?: string;
+  blurb?: string | undefined;
   children?: NavNode[];
 };
 
@@ -265,7 +265,7 @@ export const navigation: NavSection[] = [
 export type FlatNode = {
   path: string;
   label: string;
-  blurb?: string;
+  blurb?: string | undefined;
   section: NavSection;
   trail: { path: string; label: string }[];
   children: { path: string; label: string }[];
