@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SplatRouteImport } from './routes/$'
+import { Route as MyWiseRouteImport } from './routes/my-wise'
 import { Route as ApiPublicAuthGoogleCallbackRouteImport } from './routes/api/public/auth/google/callback'
 
 const IndexRoute = IndexRouteImport.update({
@@ -23,6 +24,11 @@ const SplatRoute = SplatRouteImport.update({
   path: '/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MyWiseRoute = MyWiseRouteImport.update({
+  id: '/my-wise',
+  path: '/my-wise',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicAuthGoogleCallbackRoute =
   ApiPublicAuthGoogleCallbackRouteImport.update({
     id: '/api/public/auth/google/callback',
@@ -33,30 +39,34 @@ const ApiPublicAuthGoogleCallbackRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
+  '/my-wise': typeof MyWiseRoute
   '/api/public/auth/google/callback': typeof ApiPublicAuthGoogleCallbackRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
+  '/my-wise': typeof MyWiseRoute
   '/api/public/auth/google/callback': typeof ApiPublicAuthGoogleCallbackRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
+  '/my-wise': typeof MyWiseRoute
   '/api/public/auth/google/callback': typeof ApiPublicAuthGoogleCallbackRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/$' | '/api/public/auth/google/callback'
+  fullPaths: '/' | '/$' | '/my-wise' | '/api/public/auth/google/callback'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/$' | '/api/public/auth/google/callback'
-  id: '__root__' | '/' | '/$' | '/api/public/auth/google/callback'
+  to: '/' | '/$' | '/my-wise' | '/api/public/auth/google/callback'
+  id: '__root__' | '/' | '/$' | '/my-wise' | '/api/public/auth/google/callback'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   SplatRoute: typeof SplatRoute
+  MyWiseRoute: typeof MyWiseRoute
   ApiPublicAuthGoogleCallbackRoute: typeof ApiPublicAuthGoogleCallbackRoute
 }
 
@@ -76,6 +86,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/my-wise': {
+      id: '/my-wise'
+      path: '/my-wise'
+      fullPath: '/my-wise'
+      preLoaderRoute: typeof MyWiseRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/auth/google/callback': {
       id: '/api/public/auth/google/callback'
       path: '/api/public/auth/google/callback'
@@ -89,6 +106,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   SplatRoute: SplatRoute,
+  MyWiseRoute: MyWiseRoute,
   ApiPublicAuthGoogleCallbackRoute: ApiPublicAuthGoogleCallbackRoute,
 }
 export const routeTree = rootRouteImport

@@ -77,23 +77,37 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "WISE — Swiss Accreditation Body for International Education" },
+      {
+        name: "description",
+        content:
+          "WISE, seated in Geneva, accredits international schools, benchmarks curricula and awards the WISE International Secondary Examination.",
+      },
+      { name: "author", content: "WISE Geneva" },
+      { property: "og:title", content: "WISE — Swiss Accreditation Body" },
+      {
+        property: "og:description",
+        content:
+          "Accreditation, recognition and examinations within the UNESCO and European qualification frameworks.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
       {
         rel: "stylesheet",
         href: appCss,
       },
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Archivo:wght@200;300;400;500;600;700&family=Karla:wght@300;400;500;600&family=Newsreader:ital,wght@0,300;0,400;1,300&display=swap",
+      },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
     ],
   }),
+
   shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
