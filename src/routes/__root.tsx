@@ -130,11 +130,16 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const chrome = pathname !== "/my-wise";
 
   return (
     <QueryClientProvider client={queryClient}>
+      {chrome ? <SiteHeader /> : null}
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
+      {chrome ? <SiteFooter /> : null}
     </QueryClientProvider>
   );
 }
+
