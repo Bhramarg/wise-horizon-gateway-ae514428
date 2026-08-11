@@ -14,16 +14,362 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      certificate_tags: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          locked_at: string | null
+          ndef_payload: string
+          payload_digest: string
+          replaced_by: string | null
+          result_id: string
+          revoked_at: string | null
+          status: Database["public"]["Enums"]["tag_status"]
+          tag_uid_hash: string | null
+          updated_at: string
+          write_counter: number
+          written_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          locked_at?: string | null
+          ndef_payload: string
+          payload_digest: string
+          replaced_by?: string | null
+          result_id: string
+          revoked_at?: string | null
+          status?: Database["public"]["Enums"]["tag_status"]
+          tag_uid_hash?: string | null
+          updated_at?: string
+          write_counter?: number
+          written_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          locked_at?: string | null
+          ndef_payload?: string
+          payload_digest?: string
+          replaced_by?: string | null
+          result_id?: string
+          revoked_at?: string | null
+          status?: Database["public"]["Enums"]["tag_status"]
+          tag_uid_hash?: string | null
+          updated_at?: string
+          write_counter?: number
+          written_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "certificate_tags_replaced_by_fkey"
+            columns: ["replaced_by"]
+            isOneToOne: false
+            referencedRelation: "certificate_tags"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "certificate_tags_result_id_fkey"
+            columns: ["result_id"]
+            isOneToOne: false
+            referencedRelation: "results"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      institution_members: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          institution_id: string
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          institution_id: string
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          institution_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "institution_members_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "institutions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      institutions: {
+        Row: {
+          active: boolean
+          code: string
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      results: {
+        Row: {
+          academic_period: string
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          created_by: string
+          grade: string | null
+          id: string
+          institution_id: string
+          issued_at: string | null
+          marks: Json
+          qualification: string
+          revocation_reason: string | null
+          revoked_at: string | null
+          status: Database["public"]["Enums"]["result_status"]
+          student_id: string
+          submitted_at: string | null
+          total: number | null
+          updated_at: string
+          verification_code: string
+        }
+        Insert: {
+          academic_period: string
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          created_by: string
+          grade?: string | null
+          id?: string
+          institution_id: string
+          issued_at?: string | null
+          marks?: Json
+          qualification: string
+          revocation_reason?: string | null
+          revoked_at?: string | null
+          status?: Database["public"]["Enums"]["result_status"]
+          student_id: string
+          submitted_at?: string | null
+          total?: number | null
+          updated_at?: string
+          verification_code?: string
+        }
+        Update: {
+          academic_period?: string
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string
+          grade?: string | null
+          id?: string
+          institution_id?: string
+          issued_at?: string | null
+          marks?: Json
+          qualification?: string
+          revocation_reason?: string | null
+          revoked_at?: string | null
+          status?: Database["public"]["Enums"]["result_status"]
+          student_id?: string
+          submitted_at?: string | null
+          total?: number | null
+          updated_at?: string
+          verification_code?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "results_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "institutions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "results_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      students: {
+        Row: {
+          created_at: string
+          created_by: string
+          date_of_birth: string | null
+          full_name: string
+          id: string
+          institution_id: string
+          metadata: Json
+          programme: string
+          student_number: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          date_of_birth?: string | null
+          full_name: string
+          id?: string
+          institution_id: string
+          metadata?: Json
+          programme: string
+          student_number: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          date_of_birth?: string | null
+          full_name?: string
+          id?: string
+          institution_id?: string
+          metadata?: Json
+          programme?: string
+          student_number?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "students_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "institutions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tag_events: {
+        Row: {
+          actor_id: string | null
+          details: Json
+          event_type: Database["public"]["Enums"]["tag_event_type"]
+          id: string
+          occurred_at: string
+          tag_id: string
+          tag_uid_hash: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          details?: Json
+          event_type: Database["public"]["Enums"]["tag_event_type"]
+          id?: string
+          occurred_at?: string
+          tag_id: string
+          tag_uid_hash?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          details?: Json
+          event_type?: Database["public"]["Enums"]["tag_event_type"]
+          id?: string
+          occurred_at?: string
+          tag_id?: string
+          tag_uid_hash?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tag_events_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "certificate_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      bootstrap_first_admin: { Args: never; Returns: boolean }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_institution_member: {
+        Args: { _institution_id: string; _user_id: string }
+        Returns: boolean
+      }
+      verify_certificate: {
+        Args: { _verification_code: string }
+        Returns: {
+          academic_period: string
+          grade: string
+          institution_name: string
+          issued_at: string
+          qualification: string
+          status: Database["public"]["Enums"]["result_status"]
+          student_name: string
+          student_number: string
+          valid: boolean
+        }[]
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "dms"
+      result_status: "draft" | "submitted" | "approved" | "issued" | "revoked"
+      tag_event_type:
+        | "prepared"
+        | "written"
+        | "verified"
+        | "locked"
+        | "revoked"
+        | "replaced"
+        | "scan_mismatch"
+      tag_status: "prepared" | "written" | "locked" | "revoked" | "replaced"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +496,19 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "dms"],
+      result_status: ["draft", "submitted", "approved", "issued", "revoked"],
+      tag_event_type: [
+        "prepared",
+        "written",
+        "verified",
+        "locked",
+        "revoked",
+        "replaced",
+        "scan_mismatch",
+      ],
+      tag_status: ["prepared", "written", "locked", "revoked", "replaced"],
+    },
   },
 } as const
