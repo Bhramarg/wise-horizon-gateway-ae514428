@@ -1,10 +1,11 @@
-import { useQuery } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ChevronDown, CloudSun, Menu, Wind, X, ArrowUpRight, Radio } from "lucide-react";
 
 import { navigation } from "@/lib/site-nav";
 import { getGenevaWeather, getTickerHeadlines } from "@/lib/wise.functions";
+import { supabase } from "@/integrations/supabase/client";
 
 function WiseMark({ className = "" }: { className?: string }) {
   return (
@@ -155,9 +156,23 @@ function MegaPanel({ index }: { index: number }) {
 }
 
 export function SiteHeader() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [open, setOpen] = useState<number | null>(null);
   const [mobile, setMobile] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const { data: session } = useQuery({
+    queryKey: ["auth-session"],
+    queryFn: async () => (await supabase.auth.getSession()).data.session,
+    staleTime: 60_000,
+  });
+
+  async function handleSignOut() {
+    await queryClient.cancelQueries();
+    queryClient.clear();
+    await supabase.auth.signOut();
+    navigate({ to: "/my-wise", replace: true });
+  }
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -184,13 +199,7 @@ export function SiteHeader() {
             <Link to="/$" params={{ _splat: "examinations/results-certificates/certificate-verification" }} className="hidden underline-sweep md:inline">
               Verify a certificate
             </Link>
-            <Link
-              to="/my-wise"
-              className="group relative overflow-hidden rounded-[3px] bg-navy px-4 py-2 text-[11px] font-semibold tracking-[0.18em] text-white"
-            >
-              <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
-              <span className="relative">MY WISE</span>
-            </Link>
+            {session ? <><Link to="/portal" className="font-semibold text-azure">Portal</Link><button onClick={handleSignOut} className="text-muted-foreground underline-sweep">Sign out</button></> : <Link to="/my-wise" className="group relative overflow-hidden rounded-[3px] bg-navy px-4 py-2 text-[11px] font-semibold tracking-[0.18em] text-white"><span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform duration-700 group-hover:translate-x-full" /><span className="relative">MY WISE</span></Link>}
           </div>
         </div>
 
