@@ -331,32 +331,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      bootstrap_first_admin: { Args: never; Returns: boolean }
-      has_role: {
-        Args: {
-          _role: Database["public"]["Enums"]["app_role"]
-          _user_id: string
-        }
-        Returns: boolean
-      }
-      is_institution_member: {
-        Args: { _institution_id: string; _user_id: string }
-        Returns: boolean
-      }
-      verify_certificate: {
-        Args: { _verification_code: string }
-        Returns: {
-          academic_period: string
-          grade: string
-          institution_name: string
-          issued_at: string
-          qualification: string
-          status: Database["public"]["Enums"]["result_status"]
-          student_name: string
-          student_number: string
-          valid: boolean
-        }[]
-      }
+      [_ in never]: never
     }
     Enums: {
       app_role: "admin" | "dms"
