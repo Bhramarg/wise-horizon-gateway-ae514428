@@ -58,7 +58,7 @@ export async function createDmsAccount(client: Client, userId: string, input: { 
   return { id: newUserId, email: input.email.toLowerCase() };
 }
 
-export async function addStudent(client: Client, userId: string, input: { institutionId: string; fullName: string; studentNumber: string; programme: string; dateOfBirth?: string }) {
+export async function addStudent(client: Client, userId: string, input: { institutionId: string; fullName: string; studentNumber: string; programme: string; dateOfBirth: string | undefined }) {
   const { data, error } = await client.from("students").insert({
     institution_id: input.institutionId,
     created_by: userId,
@@ -108,7 +108,7 @@ export async function prepareTag(client: Client, userId: string, input: { result
   return data;
 }
 
-export async function recordWrittenTag(client: Client, userId: string, input: { tagId: string; serialNumber?: string; locked: boolean }) {
+export async function recordWrittenTag(client: Client, userId: string, input: { tagId: string; serialNumber: string | undefined; locked: boolean }) {
   const uidHash = input.serialNumber ? createHash("sha256").update(input.serialNumber).digest("hex") : null;
   const now = new Date().toISOString();
   const { data: tag, error } = await client.from("certificate_tags").update({

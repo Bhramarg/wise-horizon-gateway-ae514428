@@ -1,13 +1,15 @@
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ArrowRight, Lock, ShieldCheck } from "lucide-react";
 
 import { Reveal } from "@/components/site/motion";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import heroImage from "@/assets/wise-hero.jpg";
-import { getGoogleAuthUrl, registerAccount, signInWithPassword } from "@/lib/auth.functions";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/my-wise")({
+  validateSearch: (search: Record<string, unknown>) => ({ next: typeof search.next === "string" ? search.next : undefined }),
   head: () => {
     const title = "My WISE — Secure portal for schools, centres and ministries";
     const description =
@@ -28,18 +30,9 @@ export const Route = createFileRoute("/my-wise")({
 
 function MyWise() {
   const navigate = useNavigate();
-  const login = useServerFn(signInWithPassword);
-  const register = useServerFn(registerAccount);
-  const googleUrl = useServerFn(getGoogleAuthUrl);
-
-  const [mode, setMode] = useState<"signin" | "register">("signin");
+  const { next } = Route.useSearch();
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [google, setGoogle] = useState<string | null>(null);
-
-  useEffect(() => {
-    googleUrl().then((res) => setGoogle(res.url));
-  }, [googleUrl]);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -51,21 +44,13 @@ function MyWise() {
         email: String(form.get("email") ?? ""),
         password: String(form.get("password") ?? ""),
       };
-      const result =
-        mode === "signin"
-          ? await login({ data: payload })
-          : await register({
-              data: {
-                ...payload,
-                name: String(form.get("name") ?? ""),
-                organisation: String(form.get("organisation") ?? ""),
-              },
-            });
-      if (!result.ok) {
-        setMessage(result.error);
+      const { error } = await supabase.auth.signInWithPassword(payload);
+      if (error) {
+        setMessage("Those credentials don't match an active WISE account.");
         return;
       }
-      navigate({ to: "/" });
+      const destination = next?.startsWith("/") && !next.startsWith("//") ? next : "/portal";
+      navigate({ to: destination });
     } catch {
       setMessage("Something interrupted the request. Please try again.");
     } finally {
@@ -134,51 +119,13 @@ function MyWise() {
               </span>
             </div>
             <h2 className="mt-5 font-display text-3xl font-light text-navy">
-              {mode === "signin" ? "Welcome back" : "Create your access"}
+              Welcome back
             </h2>
             <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">
-              {mode === "signin"
-                ? "Use your institutional credentials or continue with Google."
-                : "Register a school, examination centre or ministry contact."}
+              Use the credentials issued by your WISE administrator.
             </p>
 
-            {google ? (
-              <a
-                href={google}
-                className="mt-7 flex w-full items-center justify-center gap-3 rounded-[3px] border border-navy/15 bg-white px-5 py-3.5 text-[12px] font-semibold uppercase tracking-[0.16em] text-navy lift"
-              >
-                <svg viewBox="0 0 24 24" className="size-4" aria-hidden>
-                  <path
-                    fill="#4285F4"
-                    d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.4a5.5 5.5 0 0 1-2.4 3.6v3h3.9c2.3-2.1 3.6-5.2 3.6-8.8Z"
-                  />
-                  <path
-                    fill="#34A853"
-                    d="M12 24c3.2 0 5.9-1.1 7.9-2.9l-3.9-3c-1.1.7-2.4 1.2-4 1.2a7 7 0 0 1-6.6-4.8H1.4v3.1A12 12 0 0 0 12 24Z"
-                  />
-                  <path fill="#FBBC05" d="M5.4 14.5a7.2 7.2 0 0 1 0-4.6V6.8H1.4a12 12 0 0 0 0 10.4l4-2.7Z" />
-                  <path
-                    fill="#EA4335"
-                    d="M12 4.8c1.8 0 3.3.6 4.5 1.8l3.4-3.4A12 12 0 0 0 1.4 6.8l4 3.1A7 7 0 0 1 12 4.8Z"
-                  />
-                </svg>
-                Continue with Google
-              </a>
-            ) : null}
-
-            <div className="my-7 flex items-center gap-4 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-              <span className="h-px flex-1 bg-border" />
-              or
-              <span className="h-px flex-1 bg-border" />
-            </div>
-
-            <form onSubmit={onSubmit} className="space-y-4">
-              {mode === "register" ? (
-                <>
-                  <Field name="name" label="Full name" />
-                  <Field name="organisation" label="Institution" />
-                </>
-              ) : null}
+            <form onSubmit={onSubmit} className="mt-8 space-y-4">
               <Field name="email" label="Email" type="email" required />
               <Field name="password" label="Password" type="password" required />
 
@@ -188,27 +135,16 @@ function MyWise() {
                 </p>
               ) : null}
 
-              <button
+              <Button
                 type="submit"
                 disabled={pending}
                 className="group mt-2 flex w-full items-center justify-center gap-3 rounded-[3px] bg-navy px-5 py-4 text-[11px] font-semibold uppercase tracking-[0.2em] text-white lift disabled:opacity-60"
               >
-                {pending ? "Verifying…" : mode === "signin" ? "Sign in" : "Create account"}
+                {pending ? "Verifying…" : "Sign in"}
                 <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
-              </button>
+              </Button>
             </form>
-
-            <button
-              onClick={() => {
-                setMode(mode === "signin" ? "register" : "signin");
-                setMessage(null);
-              }}
-              className="mt-6 text-[12px] text-muted-foreground underline-sweep"
-            >
-              {mode === "signin"
-                ? "No account yet? Register an institution"
-                : "Already registered? Sign in"}
-            </button>
+            <p className="mt-6 text-[12px] leading-relaxed text-muted-foreground">Accounts are created and assigned to institutions by a WISE administrator. Public registration is disabled.</p>
           </div>
 
           <Link
@@ -239,12 +175,12 @@ function Field({
       <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
         {label}
       </span>
-      <input
+      <Input
         name={name}
         type={type}
         required={required}
         autoComplete={type === "password" ? "current-password" : "on"}
-        className="mt-2 w-full rounded-[3px] border border-navy/12 bg-white/70 px-4 py-3 text-[15px] text-navy outline-none transition-colors focus:border-azure"
+        className="mt-2 h-12 rounded-[3px] border-navy/12 bg-white/70 px-4 text-[15px] text-navy focus-visible:ring-azure"
       />
     </label>
   );
