@@ -11,8 +11,10 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SplatRouteImport } from './routes/$'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as MyWiseRouteImport } from './routes/my-wise'
-import { Route as ApiPublicAuthGoogleCallbackRouteImport } from './routes/api/public/auth/google/callback'
+import { Route as AuthenticatedPortalRouteImport } from './routes/_authenticated/portal'
+import { Route as VerifyCodeRouteImport } from './routes/verify.$code'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -24,50 +26,70 @@ const SplatRoute = SplatRouteImport.update({
   path: '/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MyWiseRoute = MyWiseRouteImport.update({
   id: '/my-wise',
   path: '/my-wise',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPublicAuthGoogleCallbackRoute =
-  ApiPublicAuthGoogleCallbackRouteImport.update({
-    id: '/api/public/auth/google/callback',
-    path: '/api/public/auth/google/callback',
-    getParentRoute: () => rootRouteImport,
-  } as any)
+const AuthenticatedPortalRoute = AuthenticatedPortalRouteImport.update({
+  id: '/portal',
+  path: '/portal',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const VerifyCodeRoute = VerifyCodeRouteImport.update({
+  id: '/verify/$code',
+  path: '/verify/$code',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
   '/my-wise': typeof MyWiseRoute
-  '/api/public/auth/google/callback': typeof ApiPublicAuthGoogleCallbackRoute
+  '/portal': typeof AuthenticatedPortalRoute
+  '/verify/$code': typeof VerifyCodeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
   '/my-wise': typeof MyWiseRoute
-  '/api/public/auth/google/callback': typeof ApiPublicAuthGoogleCallbackRoute
+  '/portal': typeof AuthenticatedPortalRoute
+  '/verify/$code': typeof VerifyCodeRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/$': typeof SplatRoute
   '/my-wise': typeof MyWiseRoute
-  '/api/public/auth/google/callback': typeof ApiPublicAuthGoogleCallbackRoute
+  '/_authenticated/portal': typeof AuthenticatedPortalRoute
+  '/verify/$code': typeof VerifyCodeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/$' | '/my-wise' | '/api/public/auth/google/callback'
+  fullPaths: '/' | '/$' | '/my-wise' | '/portal' | '/verify/$code'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/$' | '/my-wise' | '/api/public/auth/google/callback'
-  id: '__root__' | '/' | '/$' | '/my-wise' | '/api/public/auth/google/callback'
+  to: '/' | '/$' | '/my-wise' | '/portal' | '/verify/$code'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/$'
+    | '/my-wise'
+    | '/_authenticated/portal'
+    | '/verify/$code'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   SplatRoute: typeof SplatRoute
   MyWiseRoute: typeof MyWiseRoute
-  ApiPublicAuthGoogleCallbackRoute: typeof ApiPublicAuthGoogleCallbackRoute
+  VerifyCodeRoute: typeof VerifyCodeRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -86,6 +108,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/my-wise': {
       id: '/my-wise'
       path: '/my-wise'
@@ -93,32 +122,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MyWiseRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/auth/google/callback': {
-      id: '/api/public/auth/google/callback'
-      path: '/api/public/auth/google/callback'
-      fullPath: '/api/public/auth/google/callback'
-      preLoaderRoute: typeof ApiPublicAuthGoogleCallbackRouteImport
+    '/_authenticated/portal': {
+      id: '/_authenticated/portal'
+      path: '/portal'
+      fullPath: '/portal'
+      preLoaderRoute: typeof AuthenticatedPortalRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/verify/$code': {
+      id: '/verify/$code'
+      path: '/verify/$code'
+      fullPath: '/verify/$code'
+      preLoaderRoute: typeof VerifyCodeRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedPortalRoute: typeof AuthenticatedPortalRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedPortalRoute: AuthenticatedPortalRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   SplatRoute: SplatRoute,
   MyWiseRoute: MyWiseRoute,
-  ApiPublicAuthGoogleCallbackRoute: ApiPublicAuthGoogleCallbackRoute,
+  VerifyCodeRoute: VerifyCodeRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

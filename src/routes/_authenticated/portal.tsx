@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useMemo, useState } from "react";
+import { useState, type ReactNode } from "react";
 import QRCode from "qrcode";
 import { Award, Building2, CheckCircle2, ContactRound, LogOut, Radio, ShieldCheck, Smartphone, UserPlus, Users } from "lucide-react";
 
@@ -65,7 +65,7 @@ function Portal() {
   );
 }
 
-type Overview = Awaited<ReturnType<ReturnType<typeof useServerFn<typeof getPortalOverview>>>>;
+type Overview = Awaited<ReturnType<typeof getPortalOverview>>;
 
 function AdminWorkspace({ data, refresh }: { data: Overview; refresh: () => Promise<unknown> }) {
   const createInstitutionFn = useServerFn(createInstitution);
@@ -118,10 +118,10 @@ function NfcWriter({ tag, onRecorded }: { tag: { id: string; ndef_payload: strin
   return <Panel title="Write NTAG certificate" icon={Smartphone}><p className="break-all text-sm text-muted-foreground">{tag.ndef_payload}</p><p className="mt-3 text-xs text-muted-foreground">Web NFC requires a compatible Android browser over HTTPS. Hold the physical NTAG near the phone only after pressing write.</p><Button className="mt-4" disabled={!supported || pending} onClick={write}>{pending ? "Hold tag near device…" : supported ? "Write physical NTAG" : "Web NFC unavailable"}</Button></Panel>;
 }
 
-function Panel({ title, icon: Icon, children }: { title: string; icon: typeof Award; children: React.ReactNode }) { return <section className="rounded-md border bg-background p-5 shadow-sm"><div className="mb-5 flex items-center gap-2"><Icon className="size-4 text-azure" /><h2 className="font-display text-sm font-semibold text-navy">{title}</h2></div>{children}</section>; }
-function Form({ onSubmit, children }: { onSubmit: (form: FormData) => void | Promise<void>; children: React.ReactNode }) { return <form className="space-y-3" onSubmit={(event) => { event.preventDefault(); void onSubmit(new FormData(event.currentTarget)); }}>{children}</form>; }
+function Panel({ title, icon: Icon, children }: { title: string; icon: typeof Award; children: ReactNode }) { return <section className="rounded-md border bg-background p-5 shadow-sm"><div className="mb-5 flex items-center gap-2"><Icon className="size-4 text-azure" /><h2 className="font-display text-sm font-semibold text-navy">{title}</h2></div>{children}</section>; }
+function Form({ onSubmit, children }: { onSubmit: (form: FormData) => void | Promise<void>; children: ReactNode }) { return <form className="space-y-3" onSubmit={(event) => { event.preventDefault(); void onSubmit(new FormData(event.currentTarget)); }}>{children}</form>; }
 function value(form: FormData, key: string) { return String(form.get(key) ?? ""); }
 function Metric({ icon: Icon, label, value: count }: { icon: typeof Award; label: string; value: number }) { return <div className="rounded-md border bg-background p-5"><Icon className="size-5 text-azure" /><p className="mt-4 text-3xl font-light text-navy">{count}</p><p className="text-sm text-muted-foreground">{label}</p></div>; }
 function Empty({ text }: { text: string }) { return <p className="py-8 text-center text-sm text-muted-foreground">{text}</p>; }
 function Loading() { return <main className="grid min-h-screen place-items-center bg-muted/40"><p className="text-sm text-muted-foreground">Opening secure workspace…</p></main>; }
-function PortalMessage({ title, body, children }: { title: string; body: string; children?: React.ReactNode }) { return <main className="mica-surface grid min-h-screen place-items-center px-6"><div className="acrylic max-w-lg rounded-sm p-9"><ShieldCheck className="size-8 text-azure" /><h1 className="mt-5 text-3xl font-light text-navy">{title}</h1><p className="mt-3 text-muted-foreground">{body}</p>{children ? <div className="mt-7 flex flex-wrap gap-3">{children}</div> : null}</div></main>; }
+function PortalMessage({ title, body, children }: { title: string; body: string; children?: ReactNode }) { return <main className="mica-surface grid min-h-screen place-items-center px-6"><div className="acrylic max-w-lg rounded-sm p-9"><ShieldCheck className="size-8 text-azure" /><h1 className="mt-5 text-3xl font-light text-navy">{title}</h1><p className="mt-3 text-muted-foreground">{body}</p>{children ? <div className="mt-7 flex flex-wrap gap-3">{children}</div> : null}</div></main>; }
