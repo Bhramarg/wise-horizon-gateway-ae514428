@@ -9,7 +9,6 @@ import heroImage from "@/assets/wise-hero.jpg";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/my-wise")({
-  validateSearch: (search: Record<string, unknown>) => ({ next: typeof search.next === "string" ? search.next : undefined }),
   head: () => {
     const title = "My WISE — Secure portal for schools, centres and ministries";
     const description =
@@ -30,7 +29,6 @@ export const Route = createFileRoute("/my-wise")({
 
 function MyWise() {
   const navigate = useNavigate();
-  const { next } = Route.useSearch();
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -49,8 +47,7 @@ function MyWise() {
         setMessage("Those credentials don't match an active WISE account.");
         return;
       }
-      const destination = next?.startsWith("/") && !next.startsWith("//") ? next : "/portal";
-      navigate({ to: destination });
+      navigate({ to: "/portal" });
     } catch {
       setMessage("Something interrupted the request. Please try again.");
     } finally {

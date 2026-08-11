@@ -54,7 +54,7 @@ export const createStudent = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { addStudent } = await import("./portal.server");
-    return addStudent(context.supabase, context.userId, data);
+    return addStudent(context.supabase, context.userId, { ...data, dateOfBirth: data.dateOfBirth });
   });
 
 export const createResult = createServerFn({ method: "POST" })
@@ -97,7 +97,7 @@ export const recordTagWrite = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { recordWrittenTag } = await import("./portal.server");
-    return recordWrittenTag(context.supabase, context.userId, data);
+    return recordWrittenTag(context.supabase, context.userId, { ...data, serialNumber: data.serialNumber });
   });
 
 export const verifyCertificate = createServerFn({ method: "GET" })

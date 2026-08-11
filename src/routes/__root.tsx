@@ -135,7 +135,7 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  const chrome = pathname !== "/my-wise";
+  const chrome = pathname !== "/my-wise" && pathname !== "/portal";
 
   return (
     <QueryClientProvider client={queryClient}>
