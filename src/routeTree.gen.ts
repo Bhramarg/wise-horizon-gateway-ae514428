@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as SplatRouteImport } from './routes/$'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as MyWiseRouteImport } from './routes/my-wise'
+import { Route as AuthenticatedChangePasswordRouteImport } from './routes/_authenticated/change-password'
 import { Route as AuthenticatedPortalRouteImport } from './routes/_authenticated/portal'
 import { Route as VerifyCodeRouteImport } from './routes/verify.$code'
 
@@ -35,6 +36,12 @@ const MyWiseRoute = MyWiseRouteImport.update({
   path: '/my-wise',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedChangePasswordRoute =
+  AuthenticatedChangePasswordRouteImport.update({
+    id: '/change-password',
+    path: '/change-password',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedPortalRoute = AuthenticatedPortalRouteImport.update({
   id: '/portal',
   path: '/portal',
@@ -50,6 +57,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
   '/my-wise': typeof MyWiseRoute
+  '/change-password': typeof AuthenticatedChangePasswordRoute
   '/portal': typeof AuthenticatedPortalRoute
   '/verify/$code': typeof VerifyCodeRoute
 }
@@ -57,6 +65,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
   '/my-wise': typeof MyWiseRoute
+  '/change-password': typeof AuthenticatedChangePasswordRoute
   '/portal': typeof AuthenticatedPortalRoute
   '/verify/$code': typeof VerifyCodeRoute
 }
@@ -66,20 +75,23 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/$': typeof SplatRoute
   '/my-wise': typeof MyWiseRoute
+  '/_authenticated/change-password': typeof AuthenticatedChangePasswordRoute
   '/_authenticated/portal': typeof AuthenticatedPortalRoute
   '/verify/$code': typeof VerifyCodeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/$' | '/my-wise' | '/portal' | '/verify/$code'
+  fullPaths:
+    '/' | '/$' | '/my-wise' | '/change-password' | '/portal' | '/verify/$code'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/$' | '/my-wise' | '/portal' | '/verify/$code'
+  to: '/' | '/$' | '/my-wise' | '/change-password' | '/portal' | '/verify/$code'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/$'
     | '/my-wise'
+    | '/_authenticated/change-password'
     | '/_authenticated/portal'
     | '/verify/$code'
   fileRoutesById: FileRoutesById
@@ -122,6 +134,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MyWiseRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/change-password': {
+      id: '/_authenticated/change-password'
+      path: '/change-password'
+      fullPath: '/change-password'
+      preLoaderRoute: typeof AuthenticatedChangePasswordRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/portal': {
       id: '/_authenticated/portal'
       path: '/portal'
@@ -140,10 +159,12 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedChangePasswordRoute: typeof AuthenticatedChangePasswordRoute
   AuthenticatedPortalRoute: typeof AuthenticatedPortalRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedChangePasswordRoute: AuthenticatedChangePasswordRoute,
   AuthenticatedPortalRoute: AuthenticatedPortalRoute,
 }
 

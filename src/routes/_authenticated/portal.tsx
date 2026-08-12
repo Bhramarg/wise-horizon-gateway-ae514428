@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import QRCode from "qrcode";
 import { Award, Building2, CheckCircle2, ContactRound, LogOut, Radio, ShieldCheck, Smartphone, UserPlus, Users } from "lucide-react";
 
@@ -28,6 +28,13 @@ function Portal() {
   const queryClient = useQueryClient();
   const overviewFn = useServerFn(getPortalOverview);
   const claimFn = useServerFn(claimFirstAdmin);
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user?.user_metadata?.["must_change_password"]) {
+        navigate({ to: "/change-password", replace: true });
+      }
+    });
+  }, [navigate]);
   const { data, isLoading, error } = useQuery({ queryKey: ["portal-overview"], queryFn: () => overviewFn() });
   const refresh = () => queryClient.invalidateQueries({ queryKey: ["portal-overview"] });
   async function signOut() {
