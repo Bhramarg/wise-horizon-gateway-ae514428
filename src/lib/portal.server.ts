@@ -118,14 +118,14 @@ export type StudentInput = {
   fullName: string;
   studentNumber: string;
   programme: string;
-  dateOfBirth?: string;
-  caste?: string;
-  birthmark?: string;
-  faceIdNumber?: string;
-  address?: string;
+  dateOfBirth?: string | undefined;
+  caste?: string | undefined;
+  birthmark?: string | undefined;
+  faceIdNumber?: string | undefined;
+  address?: string | undefined;
   guardians: Array<{ relation: string; name: string; occupation?: string; contact?: string }>;
-  photoPath?: string;
-  prevSchoolDocPath?: string;
+  photoPath?: string | undefined;
+  prevSchoolDocPath?: string | undefined;
 };
 
 export async function addStudent(client: Client, userId: string, input: StudentInput) {
@@ -313,7 +313,7 @@ export async function revokeTag(client: Client, userId: string, tagId: string) {
 export async function setResultStatus(
   client: Client,
   userId: string,
-  input: { resultId: string; status: ResultStatus; note?: string },
+  input: { resultId: string; status: ResultStatus; note?: string | undefined },
 ) {
   await assertAdmin(client, userId);
   const now = new Date().toISOString();
