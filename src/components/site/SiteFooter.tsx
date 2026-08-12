@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { ArrowUpRight, Mail, MapPin, Phone } from "lucide-react";
 
 import { navigation } from "@/lib/site-nav";
+import wiseLogo from "@/assets/wise-logo.png.asset.json";
 
 export function SiteFooter() {
   return (
@@ -12,8 +13,16 @@ export function SiteFooter() {
       <div className="relative mx-auto max-w-[1400px] px-6 py-16">
         <div className="grid gap-12 lg:grid-cols-[1.1fr_2.2fr]">
           <div>
-            <p className="font-display text-2xl font-light tracking-tight">
-              WISE — World Institute for Standards in Education
+            <img
+              src={wiseLogo.url}
+              alt="WISE — Weqsc International Scholastic Examination"
+              width={72}
+              height={72}
+              loading="lazy"
+              className="size-[72px] object-contain"
+            />
+            <p className="mt-5 font-display text-2xl font-light tracking-tight">
+              WISE — Weqsc International Scholastic Examination
             </p>
             <p className="mt-4 max-w-sm text-sm leading-relaxed text-white/60">
               A WEQSC accreditation body seated in Switzerland, operating within the UNESCO

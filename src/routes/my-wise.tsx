@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import heroImage from "@/assets/wise-hero.jpg";
 import { supabase } from "@/integrations/supabase/client";
+import wiseLogo from "@/assets/wise-logo.png.asset.json";
 
 export const Route = createFileRoute("/my-wise")({
   head: () => {
@@ -42,9 +43,13 @@ function MyWise() {
         email: String(form.get("email") ?? ""),
         password: String(form.get("password") ?? ""),
       };
-      const { error } = await supabase.auth.signInWithPassword(payload);
+      const { data, error } = await supabase.auth.signInWithPassword(payload);
       if (error) {
         setMessage("Those credentials don't match an active WISE account.");
+        return;
+      }
+      if (data.user?.user_metadata?.["must_change_password"]) {
+        navigate({ to: "/change-password" });
         return;
       }
       navigate({ to: "/portal" });
@@ -72,9 +77,13 @@ function MyWise() {
 
         <div className="relative flex h-full flex-col justify-between p-14 text-white">
           <Link to="/" className="flex items-center gap-3">
-            <span className="grid size-11 place-items-center rounded-[3px] bg-swiss font-display text-lg font-bold">
-              W
-            </span>
+            <img
+              src={wiseLogo.url}
+              alt="WISE — Weqsc International Scholastic Examination"
+              width={44}
+              height={44}
+              className="size-11 object-contain"
+            />
             <span className="text-[11px] uppercase tracking-[0.24em] text-white/70">
               WISE Geneva
             </span>

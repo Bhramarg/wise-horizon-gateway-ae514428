@@ -6,22 +6,26 @@ import { ChevronDown, CloudSun, Menu, Wind, X, ArrowUpRight, Radio } from "lucid
 import { navigation } from "@/lib/site-nav";
 import { getGenevaWeather, getTickerHeadlines } from "@/lib/wise.functions";
 import { supabase } from "@/integrations/supabase/client";
+import wiseLogo from "@/assets/wise-logo.png.asset.json";
 
 function WiseMark({ className = "" }: { className?: string }) {
   return (
     <span className={`flex items-center gap-3 ${className}`}>
-      <span className="relative grid size-11 place-items-center overflow-hidden rounded-[3px] bg-navy text-[10px] font-semibold tracking-[0.2em] text-white">
-        <span className="absolute inset-0 bg-gradient-to-br from-azure/70 to-transparent" />
-        <span className="relative font-display text-base tracking-tight">W</span>
-      </span>
+      <img
+        src={wiseLogo.url}
+        alt="WISE — Weqsc International Scholastic Examination"
+        width={44}
+        height={44}
+        className="size-11 shrink-0 object-contain"
+      />
       <span className="leading-[1.05]">
         <span className="block font-display text-[15px] font-semibold tracking-[0.06em] text-navy">
           WISE
         </span>
         <span className="block text-[9.5px] uppercase tracking-[0.18em] text-muted-foreground">
-          World Institute for
+          Weqsc International
           <br />
-          Standards in Education
+          Scholastic Examination
         </span>
       </span>
     </span>
