@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { approveResult, claimFirstAdmin, createDmsUser, createInstitution, createResult, createStudent, getPortalOverview, prepareCertificateTag, recordTagWrite } from "@/lib/portal.functions";
+import wiseLogo from "@/assets/wise-logo.png.asset.json";
 
 export const Route = createFileRoute("/_authenticated/portal")({
   head: () => ({ meta: [
@@ -55,7 +56,7 @@ function Portal() {
     <main className="min-h-screen bg-muted/40 text-foreground">
       <header className="border-b bg-background/95 backdrop-blur-xl">
         <div className="mx-auto flex max-w-[1500px] items-center justify-between px-5 py-4">
-          <div className="flex items-center gap-3"><span className="grid size-10 place-items-center rounded-[3px] bg-navy font-display font-semibold text-primary-foreground">W</span><div><p className="font-display text-sm font-semibold text-navy">WISE Operations</p><p className="text-xs text-muted-foreground">{data.role === "admin" ? "Administrator" : "DMS workspace"}</p></div></div>
+          <div className="flex items-center gap-3"><img src={wiseLogo.url} alt="WISE seal" width={40} height={40} className="size-10 object-contain" /><div><p className="font-display text-sm font-semibold text-navy">WISE Operations</p><p className="text-xs text-muted-foreground">{data.role === "admin" ? "Administrator" : "DMS workspace"}</p></div></div>
           <div className="flex items-center gap-3"><span className="hidden text-sm text-muted-foreground sm:inline">{data.email}</span><Button variant="outline" size="sm" onClick={signOut}><LogOut /> Sign out</Button></div>
         </div>
       </header>
