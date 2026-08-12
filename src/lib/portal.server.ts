@@ -33,7 +33,7 @@ export async function getPortalOverviewForUser(client: Client, userId: string, e
   if (role) {
     try {
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      await supabaseAdmin.schema("private").rpc("purge_expired_students");
+      await supabaseAdmin.from("students").delete().lt("expires_at", new Date().toISOString());
     } catch {
       // retention sweep is best-effort
     }
@@ -317,15 +317,15 @@ export async function setResultStatus(
 ) {
   await assertAdmin(client, userId);
   const now = new Date().toISOString();
-  const patch: Record<string, unknown> = { status: input.status, review_note: input.note ?? null };
+  const patch: Database["public"]["Tables"]["results"]["Update"] = { status: input.status, review_note: input.note ?? null };
   if (input.status === "issued") {
-    patch["approved_by"] = userId;
-    patch["approved_at"] = now;
-    patch["issued_at"] = now;
+    patch.approved_by = userId;
+    patch.approved_at = now;
+    patch.issued_at = now;
   }
   if (input.status === "revoked") {
-    patch["revoked_at"] = now;
-    patch["revocation_reason"] = input.note ?? "Revoked by WISE";
+    patch.revoked_at = now;
+    patch.revocation_reason = input.note ?? "Revoked by WISE";
   }
   const { data, error } = await client.from("results").update(patch).eq("id", input.resultId).select("id, status").single();
   if (error) throw error;
