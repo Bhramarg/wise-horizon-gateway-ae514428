@@ -19,13 +19,17 @@ export type Database = {
           created_at: string
           created_by: string
           id: string
+          last_test_at: string | null
           locked_at: string | null
           ndef_payload: string
+          password_protected: boolean
           payload_digest: string
           replaced_by: string | null
           result_id: string
           revoked_at: string | null
+          secret_hash: string | null
           status: Database["public"]["Enums"]["tag_status"]
+          tag_password_hash: string | null
           tag_uid_hash: string | null
           updated_at: string
           write_counter: number
@@ -35,13 +39,17 @@ export type Database = {
           created_at?: string
           created_by: string
           id?: string
+          last_test_at?: string | null
           locked_at?: string | null
           ndef_payload: string
+          password_protected?: boolean
           payload_digest: string
           replaced_by?: string | null
           result_id: string
           revoked_at?: string | null
+          secret_hash?: string | null
           status?: Database["public"]["Enums"]["tag_status"]
+          tag_password_hash?: string | null
           tag_uid_hash?: string | null
           updated_at?: string
           write_counter?: number
@@ -51,13 +59,17 @@ export type Database = {
           created_at?: string
           created_by?: string
           id?: string
+          last_test_at?: string | null
           locked_at?: string | null
           ndef_payload?: string
+          password_protected?: boolean
           payload_digest?: string
           replaced_by?: string | null
           result_id?: string
           revoked_at?: string | null
+          secret_hash?: string | null
           status?: Database["public"]["Enums"]["tag_status"]
+          tag_password_hash?: string | null
           tag_uid_hash?: string | null
           updated_at?: string
           write_counter?: number
@@ -151,7 +163,11 @@ export type Database = {
           institution_id: string
           issued_at: string | null
           marks: Json
+          portfolio_key_hash: string | null
+          portfolio_key_issued_at: string | null
+          portfolio_path: string | null
           qualification: string
+          review_note: string | null
           revocation_reason: string | null
           revoked_at: string | null
           status: Database["public"]["Enums"]["result_status"]
@@ -172,7 +188,11 @@ export type Database = {
           institution_id: string
           issued_at?: string | null
           marks?: Json
+          portfolio_key_hash?: string | null
+          portfolio_key_issued_at?: string | null
+          portfolio_path?: string | null
           qualification: string
+          review_note?: string | null
           revocation_reason?: string | null
           revoked_at?: string | null
           status?: Database["public"]["Enums"]["result_status"]
@@ -193,7 +213,11 @@ export type Database = {
           institution_id?: string
           issued_at?: string | null
           marks?: Json
+          portfolio_key_hash?: string | null
+          portfolio_key_issued_at?: string | null
+          portfolio_path?: string | null
           qualification?: string
+          review_note?: string | null
           revocation_reason?: string | null
           revoked_at?: string | null
           status?: Database["public"]["Enums"]["result_status"]
@@ -222,37 +246,61 @@ export type Database = {
       }
       students: {
         Row: {
+          address: string | null
+          birthmark: string | null
+          caste: string | null
           created_at: string
           created_by: string
           date_of_birth: string | null
+          expires_at: string | null
+          face_id_number: string | null
           full_name: string
+          guardians: Json
           id: string
           institution_id: string
           metadata: Json
+          photo_path: string | null
+          prev_school_doc_path: string | null
           programme: string
           student_number: string
           updated_at: string
         }
         Insert: {
+          address?: string | null
+          birthmark?: string | null
+          caste?: string | null
           created_at?: string
           created_by: string
           date_of_birth?: string | null
+          expires_at?: string | null
+          face_id_number?: string | null
           full_name: string
+          guardians?: Json
           id?: string
           institution_id: string
           metadata?: Json
+          photo_path?: string | null
+          prev_school_doc_path?: string | null
           programme: string
           student_number: string
           updated_at?: string
         }
         Update: {
+          address?: string | null
+          birthmark?: string | null
+          caste?: string | null
           created_at?: string
           created_by?: string
           date_of_birth?: string | null
+          expires_at?: string | null
+          face_id_number?: string | null
           full_name?: string
+          guardians?: Json
           id?: string
           institution_id?: string
           metadata?: Json
+          photo_path?: string | null
+          prev_school_doc_path?: string | null
           programme?: string
           student_number?: string
           updated_at?: string
@@ -335,7 +383,14 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "dms"
-      result_status: "draft" | "submitted" | "approved" | "issued" | "revoked"
+      result_status:
+        | "draft"
+        | "submitted"
+        | "approved"
+        | "issued"
+        | "revoked"
+        | "on_hold"
+        | "review_required"
       tag_event_type:
         | "prepared"
         | "written"
@@ -473,7 +528,15 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "dms"],
-      result_status: ["draft", "submitted", "approved", "issued", "revoked"],
+      result_status: [
+        "draft",
+        "submitted",
+        "approved",
+        "issued",
+        "revoked",
+        "on_hold",
+        "review_required",
+      ],
       tag_event_type: [
         "prepared",
         "written",
