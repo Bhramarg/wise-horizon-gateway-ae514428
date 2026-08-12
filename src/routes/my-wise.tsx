@@ -43,9 +43,13 @@ function MyWise() {
         email: String(form.get("email") ?? ""),
         password: String(form.get("password") ?? ""),
       };
-      const { error } = await supabase.auth.signInWithPassword(payload);
+      const { data, error } = await supabase.auth.signInWithPassword(payload);
       if (error) {
         setMessage("Those credentials don't match an active WISE account.");
+        return;
+      }
+      if (data.user?.user_metadata?.["must_change_password"]) {
+        navigate({ to: "/change-password" });
         return;
       }
       navigate({ to: "/portal" });
