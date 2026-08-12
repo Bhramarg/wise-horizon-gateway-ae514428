@@ -8,7 +8,7 @@ import { Award, Building2, CheckCircle2, ContactRound, LogOut, Radio, ShieldChec
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
-import { approveResult, claimFirstAdmin, createDmsUser, createInstitution, createResult, createStudent, getPortalOverview, prepareCertificateTag, recordTagWrite } from "@/lib/portal.functions";
+import { updateResultStatus, claimFirstAdmin, createDmsUser, createInstitution, createResult, createStudent, getPortalOverview, prepareCertificateTag, recordTagWrite } from "@/lib/portal.functions";
 import wiseLogo from "@/assets/wise-logo.png.asset.json";
 
 export const Route = createFileRoute("/_authenticated/portal")({
@@ -78,7 +78,7 @@ type Overview = Awaited<ReturnType<typeof getPortalOverview>>;
 function AdminWorkspace({ data, refresh }: { data: Overview; refresh: () => Promise<unknown> }) {
   const createInstitutionFn = useServerFn(createInstitution);
   const createDmsFn = useServerFn(createDmsUser);
-  const approveFn = useServerFn(approveResult);
+  const approveFn = useServerFn(updateResultStatus);
   const [message, setMessage] = useState("");
   const submitted = data.results.filter((result) => result.status === "submitted");
   async function run(action: () => Promise<unknown>, success: string) { try { setMessage(""); await action(); setMessage(success); await refresh(); } catch (e) { setMessage(e instanceof Error ? e.message : "The request failed."); } }
@@ -89,7 +89,7 @@ function AdminWorkspace({ data, refresh }: { data: Overview; refresh: () => Prom
       {message ? <p className="rounded-sm border bg-background p-3 text-sm text-muted-foreground">{message}</p> : null}
     </section>
     <section className="space-y-6">
-      <Panel title={`Approval queue (${submitted.length})`} icon={ShieldCheck}>{submitted.length ? <div className="divide-y">{submitted.map((result) => <div key={result.id} className="flex flex-col justify-between gap-4 py-4 sm:flex-row sm:items-center"><div><p className="font-medium text-navy">{result.students?.full_name}</p><p className="text-sm text-muted-foreground">{result.qualification} · {result.academic_period} · {result.grade ?? "Ungraded"}</p></div><Button size="sm" onClick={() => run(() => approveFn({ data: { resultId: result.id } }), "Result approved and issued.")}><CheckCircle2 /> Approve & issue</Button></div>)}</div> : <Empty text="No submitted results are waiting for approval." />}</Panel>
+      <Panel title={`Approval queue (${submitted.length})`} icon={ShieldCheck}>{submitted.length ? <div className="divide-y">{submitted.map((result) => <div key={result.id} className="flex flex-col justify-between gap-4 py-4 sm:flex-row sm:items-center"><div><p className="font-medium text-navy">{result.students?.full_name}</p><p className="text-sm text-muted-foreground">{result.qualification} · {result.academic_period} · {result.grade ?? "Ungraded"}</p></div><Button size="sm" onClick={() => run(() => approveFn({ data: { status: "approved", resultId: result.id } }), "Result approved and issued.")}><CheckCircle2 /> Approve & issue</Button></div>)}</div> : <Empty text="No submitted results are waiting for approval." />}</Panel>
       <Panel title="Institutions" icon={Building2}><div className="divide-y">{data.institutions.map((item) => <div key={item.id} className="flex items-center justify-between py-3"><div><p className="font-medium">{item.name}</p><p className="text-xs text-muted-foreground">{item.code}</p></div><span className="text-xs text-azure">{item.active ? "Active" : "Inactive"}</span></div>)}</div></Panel>
     </section>
   </div>;
@@ -102,7 +102,7 @@ function DmsWorkspace({ data, refresh }: { data: Overview; refresh: () => Promis
   const writtenFn = useServerFn(recordTagWrite);
   const institutionId = data.memberships.find((item) => item.active)?.institution_id ?? data.institutions[0]?.id ?? "";
   const [message, setMessage] = useState("");
-  const [tag, setTag] = useState<{ id: string; ndef_payload: string } | null>(null);
+  const [tag, setTag] = useState<{ id: string; writePayload: string } | null>(null);
   const issued = data.results.filter((item) => item.status === "issued");
   async function run(action: () => Promise<unknown>, success: string) { try { setMessage(""); await action(); setMessage(success); await refresh(); } catch (e) { setMessage(e instanceof Error ? e.message : "The request failed."); } }
   return <div className="mt-7 grid gap-6 xl:grid-cols-2">
@@ -119,11 +119,11 @@ function DmsWorkspace({ data, refresh }: { data: Overview; refresh: () => Promis
   </div>;
 }
 
-function NfcWriter({ tag, onRecorded }: { tag: { id: string; ndef_payload: string }; onRecorded: (serial?: string, locked?: boolean) => Promise<void> }) {
+function NfcWriter({ tag, onRecorded }: { tag: { id: string; writePayload: string }; onRecorded: (serial?: string, locked?: boolean) => Promise<void> }) {
   const supported = typeof window !== "undefined" && "NDEFReader" in window;
   const [pending, setPending] = useState(false);
-  const write = async () => { setPending(true); try { const Reader = (window as unknown as { NDEFReader: new () => { write: (message: { records: Array<{ recordType: string; data: string }> }) => Promise<void> } }).NDEFReader; const reader = new Reader(); await reader.write({ records: [{ recordType: "url", data: tag.ndef_payload }] }); await onRecorded(undefined, false); } finally { setPending(false); } };
-  return <Panel title="Write NTAG certificate" icon={Smartphone}><p className="break-all text-sm text-muted-foreground">{tag.ndef_payload}</p><p className="mt-3 text-xs text-muted-foreground">Web NFC requires a compatible Android browser over HTTPS. Hold the physical NTAG near the phone only after pressing write.</p><Button className="mt-4" disabled={!supported || pending} onClick={write}>{pending ? "Hold tag near device…" : supported ? "Write physical NTAG" : "Web NFC unavailable"}</Button></Panel>;
+  const write = async () => { setPending(true); try { const Reader = (window as unknown as { NDEFReader: new () => { write: (message: { records: Array<{ recordType: string; data: string }> }) => Promise<void> } }).NDEFReader; const reader = new Reader(); await reader.write({ records: [{ recordType: "url", data: tag.writePayload }] }); await onRecorded(undefined, false); } finally { setPending(false); } };
+  return <Panel title="Write NTAG certificate" icon={Smartphone}><p className="break-all text-sm text-muted-foreground">{tag.writePayload}</p><p className="mt-3 text-xs text-muted-foreground">Web NFC requires a compatible Android browser over HTTPS. Hold the physical NTAG near the phone only after pressing write.</p><Button className="mt-4" disabled={!supported || pending} onClick={write}>{pending ? "Hold tag near device…" : supported ? "Write physical NTAG" : "Web NFC unavailable"}</Button></Panel>;
 }
 
 function Panel({ title, icon: Icon, children }: { title: string; icon: typeof Award; children: ReactNode }) { return <section className="rounded-md border bg-background p-5 shadow-sm"><div className="mb-5 flex items-center gap-2"><Icon className="size-4 text-azure" /><h2 className="font-display text-sm font-semibold text-navy">{title}</h2></div>{children}</section>; }
