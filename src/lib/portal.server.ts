@@ -123,7 +123,7 @@ export type StudentInput = {
   birthmark?: string | undefined;
   faceIdNumber?: string | undefined;
   address?: string | undefined;
-  guardians: Array<{ relation: string; name: string; occupation?: string; contact?: string }>;
+  guardians: Array<{ relation: string; name: string; occupation?: string | undefined; contact?: string | undefined }>;
   photoPath?: string | undefined;
   prevSchoolDocPath?: string | undefined;
 };
