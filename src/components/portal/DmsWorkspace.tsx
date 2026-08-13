@@ -62,7 +62,6 @@ type MarkRow = { subject: string; score: string; maxScore: string };
 export function DmsWorkspace({ data, refresh }: { data: Overview; refresh: () => Promise<unknown> }) {
   const institutionId = data.memberships.find((item) => item.active)?.institution_id ?? data.institutions[0]?.id ?? "";
   const [tab, setTab] = useState("overview");
-  const issued = data.results.filter((item) => item.status === "issued").length;
   const pending = data.results.filter((item) => item.status === "submitted").length;
 
   return (
@@ -150,9 +149,6 @@ export function DmsWorkspace({ data, refresh }: { data: Overview; refresh: () =>
       <TabsContent value="bulk">
         <BulkUpload institutionId={institutionId} refresh={refresh} />
       </TabsContent>
-
-      <TabsContent value="overview" className="hidden" />
-      {issued ? null : null}
     </Tabs>
   );
 }
