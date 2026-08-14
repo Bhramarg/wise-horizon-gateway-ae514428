@@ -392,11 +392,15 @@ function SubmissionWizard({
                     data: {
                       institutionId,
                       studentId,
-                      qualification: String(form.get("qualification") ?? ""),
+                      qualification: level,
                       academicPeriod: String(form.get("academicPeriod") ?? ""),
                       marks: marks
                         .filter((row) => row.subject.trim())
-                        .map((row) => ({ subject: row.subject.trim(), score: Number(row.score), maxScore: Number(row.maxScore) })),
+                        .map((row) => ({
+                          subject: row.code ? `${row.code} · ${row.subject.trim()}` : row.subject.trim(),
+                          score: Number(row.score),
+                          maxScore: Number(row.maxScore),
+                        })),
                       submit: false,
                     },
                   });
@@ -406,41 +410,92 @@ function SubmissionWizard({
                 });
               }}
             >
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Qualification">
-                  <Input name="qualification" required placeholder="WISE Secondary Diploma" />
+              <div className="grid gap-4 sm:grid-cols-3">
+                <Field label="School / centre" hint="Fixed to your allotted centre">
+                  <select disabled value={institutionId} className={selectClass}>
+                    {data.institutions.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.name} ({item.code})
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label="Qualification level">
+                  <select
+                    value={level}
+                    className={selectClass}
+                    onChange={(event) => {
+                      const next = event.target.value;
+                      setLevel(next);
+                      setMarks(
+                        data.subjects
+                          .filter((item) => item.level === next && item.active && item.category !== "optional")
+                          .map(toRow),
+                      );
+                    }}
+                  >
+                    {LEVELS.map((item) => (
+                      <option key={item} value={item}>
+                        {item}
+                      </option>
+                    ))}
+                  </select>
                 </Field>
                 <Field label="Academic period">
                   <Input name="academicPeriod" required placeholder="2025 / 2026" />
                 </Field>
               </div>
               <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Subjects</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Subjects · {level}</p>
+                {marks.length ? null : (
+                  <p className="text-xs text-muted-foreground">
+                    No subjects are published for {level} yet. Ask a WISE administrator to define the {level} curriculum.
+                  </p>
+                )}
                 {marks.map((row, index) => (
-                  <div key={index} className="grid gap-3 sm:grid-cols-[2fr_1fr_1fr]">
-                    <Input
-                      placeholder="Subject"
-                      value={row.subject}
-                      onChange={(event) => setMarks((rows) => rows.map((item, i) => (i === index ? { ...item, subject: event.target.value } : item)))}
-                    />
+                  <div key={index} className="grid items-center gap-3 sm:grid-cols-[2fr_1fr_1fr_auto]">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium">{row.subject}</p>
+                      <p className="text-[11px] text-muted-foreground">
+                        {row.code ?? "—"} · {row.category ?? "custom"}
+                        {row.passing !== undefined ? ` · pass ${row.passing}` : ""}
+                      </p>
+                    </div>
                     <Input
                       type="number"
                       placeholder="Score"
+                      max={Number(row.maxScore)}
                       value={row.score}
                       onChange={(event) => setMarks((rows) => rows.map((item, i) => (i === index ? { ...item, score: event.target.value } : item)))}
                     />
-                    <Input
-                      type="number"
-                      placeholder="Max"
-                      value={row.maxScore}
-                      onChange={(event) => setMarks((rows) => rows.map((item, i) => (i === index ? { ...item, maxScore: event.target.value } : item)))}
-                    />
+                    <Input type="number" readOnly value={row.maxScore} aria-label="Total marks" />
+                    {row.category === "fixed" ? (
+                      <span className="text-[11px] text-muted-foreground">fixed</span>
+                    ) : (
+                      <Button type="button" size="sm" variant="ghost" onClick={() => setMarks((rows) => rows.filter((_, i) => i !== index))}>
+                        Remove
+                      </Button>
+                    )}
                   </div>
                 ))}
-                <Button type="button" size="sm" variant="outline" onClick={() => setMarks((rows) => [...rows, { subject: "", score: "", maxScore: "100" }])}>
-                  Add subject
-                </Button>
+                {optionalSubjects.length ? (
+                  <div className="flex flex-wrap items-center gap-2 pt-2">
+                    <span className="text-[11px] uppercase tracking-wider text-muted-foreground">Optional subjects</span>
+                    {optionalSubjects.map((subject) => (
+                      <Button
+                        key={subject.id}
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setMarks((rows) => [...rows, toRow(subject)])}
+                      >
+                        + {subject.code}
+                      </Button>
+                    ))}
+                  </div>
+                ) : null}
               </div>
+
               <div className="grid gap-4 sm:grid-cols-3">
                 <Surface className="p-4">
                   <p className="text-xs text-muted-foreground">Obtained</p>
