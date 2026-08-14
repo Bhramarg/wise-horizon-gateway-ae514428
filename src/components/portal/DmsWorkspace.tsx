@@ -32,6 +32,7 @@ import {
   recordTagWrite,
   submitResult,
   testCertificateTag,
+  deleteDraftResult,
 } from "@/lib/portal.functions";
 import { Empty, Field, Metric, Panel, StatusChip, StepRail, Surface, type Overview } from "@/components/portal/shell";
 import { errorMessage } from "@/lib/utils";
@@ -88,7 +89,10 @@ const toRow = (subject: SubjectRow): MarkRow => ({
 export function DmsWorkspace({ data, refresh }: { data: Overview; refresh: () => Promise<unknown> }) {
   const institutionId = data.memberships.find((item) => item.active)?.institution_id ?? data.institutions[0]?.id ?? "";
   const [tab, setTab] = useState("overview");
+  const [draftId, setDraftId] = useState<string | null>(null);
   const pending = data.results.filter((item) => item.status === "submitted").length;
+  const deleteDraftFn = useServerFn(deleteDraftResult);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   return (
     <Tabs value={tab} onValueChange={setTab} className="mt-6 gap-6">
@@ -107,7 +111,7 @@ export function DmsWorkspace({ data, refresh }: { data: Overview; refresh: () =>
             <FileSpreadsheet className="size-4" /> Bulk upload
           </TabsTrigger>
         </TabsList>
-        <Button size="sm" onClick={() => setTab("new")}>
+        <Button size="sm" onClick={() => { setDraftId(null); setTab("new"); }}>
           <UserPlus /> Add new student
         </Button>
       </div>
@@ -141,7 +145,15 @@ export function DmsWorkspace({ data, refresh }: { data: Overview; refresh: () =>
       </TabsContent>
 
       <TabsContent value="new">
-        <SubmissionWizard data={data} institutionId={institutionId} refresh={refresh} onBulk={() => setTab("bulk")} onDraft={() => setTab("submissions")} />
+        <SubmissionWizard 
+          key={draftId || "new"} 
+          data={data} 
+          institutionId={institutionId} 
+          refresh={refresh} 
+          onBulk={() => setTab("bulk")} 
+          onDraft={() => { setDraftId(null); setTab("submissions"); }}
+          draftId={draftId}
+        />
       </TabsContent>
 
       <TabsContent value="submissions">
@@ -159,9 +171,35 @@ export function DmsWorkspace({ data, refresh }: { data: Overview; refresh: () =>
                   </div>
                   <div className="flex items-center gap-2">
                     <StatusChip status={result.status} />
-                    <Button size="sm" variant="outline" onClick={() => downloadQr(result.verification_code)}>
-                      <QrCode /> QR
-                    </Button>
+                    {result.status === "draft" ? (
+                      <>
+                        <Button size="sm" variant="outline" onClick={() => { setDraftId(result.id); setTab("new"); }}>
+                          Edit / Continue
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10" 
+                          disabled={deletingId === result.id}
+                          onClick={async () => {
+                            if (!window.confirm("Are you sure you want to delete this draft?")) return;
+                            setDeletingId(result.id);
+                            try {
+                              await deleteDraftFn({ data: { resultId: result.id } });
+                              await refresh();
+                            } finally {
+                              setDeletingId(null);
+                            }
+                          }}
+                        >
+                          {deletingId === result.id ? <Loader2 className="animate-spin size-4" /> : "Delete"}
+                        </Button>
+                      </>
+                    ) : (
+                      <Button size="sm" variant="outline" onClick={() => downloadQr(result.verification_code)}>
+                        <QrCode /> QR
+                      </Button>
+                    )}
                   </div>
                 </div>
               ))}
@@ -194,12 +232,14 @@ function SubmissionWizard({
   refresh,
   onBulk,
   onDraft,
+  draftId,
 }: {
   data: Overview;
   institutionId: string;
   refresh: () => Promise<unknown>;
   onBulk: () => void;
   onDraft?: () => void;
+  draftId?: string | null;
 }) {
   const studentFn = useServerFn(createStudent);
   const resultFn = useServerFn(createResult);
@@ -210,21 +250,45 @@ function SubmissionWizard({
   const testFn = useServerFn(testCertificateTag);
   const submitFn = useServerFn(submitResult);
 
+  const draftContext = useMemo(() => draftId ? data.results.find(r => r.id === draftId) : null, [draftId, data.results]);
+  const draftStudent = draftContext?.students as unknown as { 
+    id?: string;
+    student_number: string;
+    full_name: string;
+    programme: string;
+    date_of_birth?: string | null;
+    expires_at?: string | null;
+    photo_path?: string | null;
+    metadata?: any;
+    caste?: string | null;
+    birthmark?: string | null;
+    face_id_number?: string | null;
+    address?: string | null;
+    guardians?: any;
+  } | undefined;
+
   const [step, setStep] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [studentId, setStudentId] = useState("");
-  const [studentName, setStudentName] = useState("");
-  const [result, setResult] = useState<{ id: string; verification_code: string; total: number | null; grade: string | null } | null>(null);
-  const [portfolioPath, setPortfolioPath] = useState("");
+  const [studentId, setStudentId] = useState(draftContext?.student_id || "");
+  const [studentName, setStudentName] = useState(draftStudent?.full_name || "");
+  const [result, setResult] = useState<{ id: string; verification_code: string; total: number | null; grade: string | null } | null>(
+    draftContext ? { id: draftContext.id, verification_code: draftContext.verification_code, total: draftContext.total, grade: draftContext.grade } : null
+  );
+  const [portfolioPath, setPortfolioPath] = useState(draftContext?.portfolio_path || "");
   const [portfolioKey, setPortfolioKey] = useState("");
   const [tag, setTag] = useState<{ id: string; writePayload: string; tagPassword: string } | null>(null);
   const [tagWritten, setTagWritten] = useState(false);
   const [tagTest, setTagTest] = useState<"idle" | "pass" | "fail">("idle");
-  const [pushed, setPushed] = useState(false);
+  const [pushed, setPushed] = useState(draftContext?.status === "submitted" || draftContext?.status === "issued");
 
-  const [guardians, setGuardians] = useState<Guardian[]>([{ relation: "Father", name: "" }]);
-  const [level, setLevel] = useState<string>("L2");
+  const [guardians, setGuardians] = useState<Guardian[]>(() => {
+    if (draftStudent?.guardians && Array.isArray(draftStudent.guardians)) {
+      return draftStudent.guardians as Guardian[];
+    }
+    return [{ relation: "Father", name: "" }, { relation: "Mother", name: "" }];
+  });
+  const [level, setLevel] = useState<string>(draftContext?.qualification || "L2");
   const [stream, setStream] = useState<string>("science");
 
   const getInitialMarks = useCallback((lvl: string, str: string) => {
@@ -241,7 +305,12 @@ function SubmissionWizard({
     }).map(toRow);
   }, [data.subjects]);
 
-  const [marks, setMarks] = useState<MarkRow[]>(() => getInitialMarks("L2", "science"));
+  const [marks, setMarks] = useState<MarkRow[]>(() => {
+    if (draftContext?.marks && Array.isArray(draftContext.marks)) {
+      return draftContext.marks as MarkRow[];
+    }
+    return getInitialMarks("L2", "science");
+  });
 
   const optionalSubjects = data.subjects.filter(
     (item) => item.level === level && item.active && item.category === "optional" && !marks.some((row) => row.code === item.code),
@@ -317,6 +386,7 @@ function SubmissionWizard({
                   const docPath = doc && doc.size ? await uploadTo("student-files", institutionId, doc) : undefined;
                   const created = await studentFn({
                     data: {
+                      id: studentId || undefined,
                       institutionId,
                       fullName: String(form.get("fullName") ?? ""),
                       studentNumber: String(form.get("studentNumber") ?? ""),
@@ -341,25 +411,25 @@ function SubmissionWizard({
             >
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field label="Full legal name">
-                  <Input name="fullName" required placeholder="Anaya Sharma" />
+                  <Input name="fullName" required placeholder="Anaya Sharma" defaultValue={draftStudent?.full_name} />
                 </Field>
                 <Field label="Student number">
-                  <Input name="studentNumber" required placeholder="WISE-2026-001" />
+                  <Input name="studentNumber" required placeholder="WISE-2026-001" defaultValue={draftStudent?.student_number} />
                 </Field>
                 <Field label="Programme">
-                  <Input name="programme" required placeholder="Secondary Diploma" />
+                  <Input name="programme" required placeholder="Secondary Diploma" defaultValue={draftStudent?.programme} />
                 </Field>
                 <Field label="Date of birth">
-                  <Input name="dateOfBirth" type="date" />
+                  <Input name="dateOfBirth" type="date" defaultValue={draftStudent?.date_of_birth ?? ""} />
                 </Field>
                 <Field label="Caste / category">
-                  <Input name="caste" />
+                  <Input name="caste" defaultValue={draftStudent?.caste ?? ""} />
                 </Field>
                 <Field label="Face ID number">
-                  <Input name="faceIdNumber" />
+                  <Input name="faceIdNumber" defaultValue={draftStudent?.face_id_number ?? ""} />
                 </Field>
                 <Field label="Gender">
-                  <select name="gender" className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50">
+                  <select name="gender" defaultValue={draftStudent?.metadata?.gender ?? ""} className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50">
                     <option value="">Select...</option>
                     <option value="MALE">Male</option>
                     <option value="FEMALE">Female</option>
@@ -367,10 +437,10 @@ function SubmissionWizard({
                   </select>
                 </Field>
                 <Field label="Identifying birthmark">
-                  <Input name="birthmark" />
+                  <Input name="birthmark" defaultValue={draftStudent?.birthmark ?? ""} />
                 </Field>
                 <Field label="Residential address">
-                  <Input name="address" />
+                  <Input name="address" defaultValue={draftStudent?.address ?? ""} />
                 </Field>
               </div>
 
@@ -441,6 +511,7 @@ function SubmissionWizard({
                 void run(async () => {
                   const created = await resultFn({
                     data: {
+                      id: result?.id || undefined,
                       institutionId,
                       studentId,
                       qualification: level,

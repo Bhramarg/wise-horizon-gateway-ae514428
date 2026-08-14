@@ -42,7 +42,7 @@ export async function getPortalOverviewForUser(client: Client, userId: string, e
     client.from("institutions").select("id, name, code, active").order("name"),
     client
       .from("students")
-      .select("id, institution_id, student_number, full_name, programme, date_of_birth, expires_at, photo_path, created_at")
+      .select("id, institution_id, student_number, full_name, programme, date_of_birth, expires_at, photo_path, created_at, metadata, caste, birthmark, face_id_number, address, guardians, prev_school_doc_path")
       .order("created_at", { ascending: false })
       .limit(200),
     client
@@ -166,6 +166,7 @@ export async function createDmsAccount(client: Client, userId: string, input: { 
 }
 
 export type StudentInput = {
+  id?: string | undefined;
   institutionId: string;
   fullName: string;
   studentNumber: string;
@@ -183,26 +184,26 @@ export type StudentInput = {
 
 export async function addStudent(client: Client, userId: string, input: StudentInput) {
   if (!input.institutionId) throw new Error("No institution is linked to this account. Ask an administrator to assign one.");
-  const { data, error } = await client
-    .from("students")
-    .insert({
-      institution_id: input.institutionId,
-      created_by: userId,
-      full_name: input.fullName,
-      student_number: input.studentNumber,
-      programme: input.programme,
-      date_of_birth: input.dateOfBirth || null,
-      caste: input.caste || null,
-      birthmark: input.birthmark || null,
-      face_id_number: input.faceIdNumber || null,
-      address: input.address || null,
-      guardians: input.guardians as unknown as Json,
-      metadata: { gender: input.gender || null } as Json,
-      photo_path: input.photoPath || null,
-      prev_school_doc_path: input.prevSchoolDocPath || null,
-    })
-    .select("id, full_name, expires_at")
-    .single();
+  const row = {
+    institution_id: input.institutionId,
+    created_by: userId,
+    full_name: input.fullName,
+    student_number: input.studentNumber,
+    programme: input.programme,
+    date_of_birth: input.dateOfBirth || null,
+    caste: input.caste || null,
+    birthmark: input.birthmark || null,
+    face_id_number: input.faceIdNumber || null,
+    address: input.address || null,
+    guardians: input.guardians as unknown as Json,
+    metadata: { gender: input.gender || null } as Json,
+    photo_path: input.photoPath || null,
+    prev_school_doc_path: input.prevSchoolDocPath || null,
+  };
+  const query = input.id
+    ? client.from("students").update(row).eq("id", input.id).select("id, full_name, expires_at").single()
+    : client.from("students").insert(row).select("id, full_name, expires_at").single();
+  const { data, error } = await query;
   if (error) {
     if (error.code === "23505") {
       throw new Error(`Student number "${input.studentNumber}" already exists for this institution. Use a different number.`);
@@ -219,6 +220,7 @@ export async function addResult(
   client: Client,
   userId: string,
   input: {
+    id?: string;
     institutionId: string;
     studentId: string;
     qualification: string;
@@ -230,22 +232,22 @@ export async function addResult(
   const obtained = input.marks.reduce((sum, item) => sum + item.score, 0);
   const maximum = input.marks.reduce((sum, item) => sum + item.maxScore, 0) || 1;
   const percentage = Math.round((obtained / maximum) * 10000) / 100;
-  const { data, error } = await client
-    .from("results")
-    .insert({
-      institution_id: input.institutionId,
-      student_id: input.studentId,
-      created_by: userId,
-      qualification: input.qualification,
-      academic_period: input.academicPeriod,
-      marks: input.marks as unknown as Json,
-      total: percentage,
-      grade: gradeFor(percentage),
-      status: input.submit ? "submitted" : "draft",
-      submitted_at: input.submit ? new Date().toISOString() : null,
-    })
-    .select("id, verification_code, total, grade")
-    .single();
+  const row = {
+    institution_id: input.institutionId,
+    student_id: input.studentId,
+    created_by: userId,
+    qualification: input.qualification,
+    academic_period: input.academicPeriod,
+    marks: input.marks as unknown as Json,
+    total: percentage,
+    grade: gradeFor(percentage),
+    status: (input.submit ? "submitted" : "draft") as "draft" | "submitted",
+    submitted_at: input.submit ? new Date().toISOString() : null,
+  };
+  const query = input.id
+    ? client.from("results").update(row).eq("id", input.id).select("id, verification_code, total, grade").single()
+    : client.from("results").insert(row).select("id, verification_code, total, grade").single();
+  const { data, error } = await query;
   if (error) throw error;
   // The learner record becomes permanent once a marksheet exists.
   await client.from("students").update({ expires_at: null }).eq("id", input.studentId);
@@ -398,6 +400,12 @@ export async function setResultStatus(
 export async function deleteResultAsAdmin(client: Client, userId: string, resultId: string) {
   await assertAdmin(client, userId);
   const { error } = await client.from("results").delete().eq("id", resultId);
+  if (error) throw error;
+  return { ok: true as const };
+}
+
+export async function deleteDraftResult(client: Client, userId: string, resultId: string) {
+  const { error } = await client.from("results").delete().eq("id", resultId).eq("status", "draft");
   if (error) throw error;
   return { ok: true as const };
 }

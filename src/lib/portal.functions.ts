@@ -69,7 +69,13 @@ export const deleteSubjectDefinition = createServerFn({ method: "POST" })
     const { removeSubject } = await import("./portal.server");
     return removeSubject(context.supabase, context.userId, data.id);
   });
-
+export const deleteDraftResult = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ resultId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { deleteDraftResult: deleteDraftResultSrv } = await import("./portal.server");
+    return deleteDraftResultSrv(context.supabase, context.userId, data.resultId);
+  });
 
 export const createStudent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -77,6 +83,7 @@ export const createStudent = createServerFn({ method: "POST" })
     z
       .object({
         institutionId: z.string().uuid(),
+        id: z.string().uuid().optional(),
         fullName: z.string().min(2).max(160),
         studentNumber: z.string().min(1).max(60),
         programme: z.string().min(2).max(160),
@@ -104,7 +111,8 @@ export const createStudent = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { addStudent } = await import("./portal.server");
-    return addStudent(context.supabase, context.userId, data);
+    const { id, ...rest } = data;
+    return addStudent(context.supabase, context.userId, id ? { id, ...rest } : rest);
   });
 
 export const createResult = createServerFn({ method: "POST" })
@@ -113,6 +121,7 @@ export const createResult = createServerFn({ method: "POST" })
     z
       .object({
         institutionId: z.string().uuid(),
+        id: z.string().uuid().optional(),
         studentId: z.string().uuid(),
         qualification: z.string().min(2).max(160),
         academicPeriod: z.string().min(2).max(60),
@@ -132,7 +141,8 @@ export const createResult = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { addResult } = await import("./portal.server");
-    return addResult(context.supabase, context.userId, data);
+    const { id, ...rest } = data;
+    return addResult(context.supabase, context.userId, id ? { id, ...rest } : rest);
   });
 
 export const submitResult = createServerFn({ method: "POST" })
