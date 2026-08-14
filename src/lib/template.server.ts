@@ -17,7 +17,7 @@ export async function buildFinalHtml(
 
   // 1. Generate QR Code once
   if (studentData.verification?.verification_code) {
-    const verifyUrl = `https://portal.wisehorizon.org/verify/${studentData.verification.verification_code}`;
+    const verifyUrl = `https://wise.weqsc.org/verify/${studentData.verification.verification_code}`;
     const qrDataUri = await QRCode.toDataURL(verifyUrl, { margin: 0, width: 150 });
     studentData.verification.qr_code_url = qrDataUri;
   }

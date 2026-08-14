@@ -2,7 +2,6 @@ import { Link } from "@tanstack/react-router";
 import { ArrowUpRight, Mail, MapPin, Phone } from "lucide-react";
 
 import { navigation } from "@/lib/site-nav";
-import wiseLogo from "@/assets/wise-logo.png.asset.json";
 
 export function SiteFooter() {
   return (
@@ -14,7 +13,7 @@ export function SiteFooter() {
         <div className="grid gap-12 lg:grid-cols-[1.1fr_2.2fr]">
           <div>
             <img
-              src={wiseLogo.url}
+              src="/wise-logo.png"
               alt="WISE — Weqsc International Secondary Examination"
               width={72}
               height={72}

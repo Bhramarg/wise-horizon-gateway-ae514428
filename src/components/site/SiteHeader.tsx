@@ -6,13 +6,12 @@ import { ChevronDown, CloudSun, Menu, Wind, X, ArrowUpRight, Radio } from "lucid
 import { navigation } from "@/lib/site-nav";
 import { getGenevaWeather, getTickerHeadlines } from "@/lib/wise.functions";
 import { supabase } from "@/integrations/supabase/client";
-import wiseLogo from "@/assets/wise-logo.png.asset.json";
 
 function WiseMark({ className = "" }: { className?: string }) {
   return (
     <span className={`flex items-center gap-3 ${className}`}>
       <img
-        src={wiseLogo.url}
+        src="/wise-logo.png"
         alt="WISE — Weqsc International Secondary Examination"
         width={44}
         height={44}

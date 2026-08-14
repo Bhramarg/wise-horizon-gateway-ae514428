@@ -59,7 +59,7 @@ async function uploadTo(bucket: "student-files" | "portfolios", folder: string, 
 }
 
 type Guardian = { relation: string; name: string; occupation?: string; contact?: string };
-type MarkRow = { subject: string; score: string; maxScore: string; code?: string; category?: string; passing?: number };
+type MarkRow = { subject: string; subjectName?: string; score: string; maxScore: string; code?: string; category?: string; passing?: number };
 type SubjectRow = Overview["subjects"][number];
 
 const LEVELS = [
@@ -458,8 +458,8 @@ function SubmissionWizard({
                 <Field label="Full legal name">
                   <Input name="fullName" required placeholder="Anaya Sharma" defaultValue={draftStudent?.full_name} />
                 </Field>
-                <Field label="Examination hall ticket number" hint="Format: A0B0C0-123">
-                  <Input name="studentNumber" required placeholder="A0A0A0-000" pattern="[A-Za-z]0[A-Za-z]0[A-Za-z]0-\d{3}" defaultValue={draftStudent?.student_number} title="Must be in format A0A0A0-000" />
+                <Field label="Examination hall ticket number" hint="Format: 9 digits">
+                  <Input name="studentNumber" required placeholder="123456789" pattern="\d{9}" defaultValue={draftStudent?.student_number} title="Must be exactly 9 digits" />
                 </Field>
                 <Field label="Programme">
                   <Input name="programme" required placeholder="Secondary Diploma" defaultValue={draftStudent?.programme} />
@@ -568,6 +568,7 @@ function SubmissionWizard({
                         .filter((row) => row.subject.trim())
                         .map((row) => ({
                           subject: row.code ? `${row.code} · ${row.subject.trim()}` : row.subject.trim(),
+                          subjectName: row.subjectName?.trim() || undefined,
                           score: Number(row.score),
                           maxScore: Number(row.maxScore),
                         })),
@@ -640,9 +641,15 @@ function SubmissionWizard({
                   </p>
                 )}
                 {marks.map((row, index) => (
-                  <div key={index} className="grid items-center gap-3 sm:grid-cols-[2fr_1fr_1fr_auto]">
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium">{row.subject}</p>
+                  <div key={index} className="grid items-center gap-3 sm:grid-cols-[2fr_1fr_1fr_1fr_auto]">
+                    <div className="min-w-0 flex flex-col gap-1">
+                      <p className="truncate text-xs font-medium text-muted-foreground">{row.subject}</p>
+                      <Input
+                        placeholder="Specific Subject Name (e.g. English)"
+                        value={row.subjectName || ""}
+                        className="h-8 text-sm"
+                        onChange={(event) => setMarks((rows) => rows.map((item, i) => (i === index ? { ...item, subjectName: event.target.value } : item)))}
+                      />
                       <p className="text-[11px] text-muted-foreground">
                         {row.code ?? "—"} · {row.category ?? "custom"}
                         {row.passing !== undefined ? ` · pass ${row.passing}` : ""}

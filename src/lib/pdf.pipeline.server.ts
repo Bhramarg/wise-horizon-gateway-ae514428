@@ -51,7 +51,9 @@ export async function issueCertificatePipeline(client: Client, resultId: string)
   const marks = (result.marks as any[]) || [];
   
   const subjects = marks.map(m => ({
-    name: m.subject,
+    name: m.subjectName 
+      ? `<div style="line-height: 1.2;"><span style="font-size: 1.15em; font-weight: 600;">${m.subjectName}</span><br><span style="font-size: 0.85em; opacity: 0.8;">${m.subject}</span></div>`
+      : m.subject,
     score: String(m.score),
     grade: gradeFor((m.score / m.maxScore) * 100),
     min: String(Math.floor(m.maxScore * 0.33)),

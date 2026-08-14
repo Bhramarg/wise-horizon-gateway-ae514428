@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import heroImage from "@/assets/wise-hero.jpg";
 import { supabase } from "@/integrations/supabase/client";
-import wiseLogo from "@/assets/wise-logo.png.asset.json";
 
 export const Route = createFileRoute("/my-wise")({
   head: () => {
@@ -78,7 +77,7 @@ function MyWise() {
         <div className="relative flex h-full flex-col justify-between p-14 text-white">
           <Link to="/" className="flex items-center gap-3">
             <img
-              src={wiseLogo.url}
+              src="/wise-logo.png"
               alt="WISE — Weqsc International Secondary Examination"
               width={44}
               height={44}

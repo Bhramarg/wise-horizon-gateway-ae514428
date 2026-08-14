@@ -130,6 +130,7 @@ export const createResult = createServerFn({ method: "POST" })
           .array(
             z.object({
               subject: z.string().min(1).max(100),
+              subjectName: z.string().max(100).optional(),
               score: z.number().min(0).max(1000),
               maxScore: z.number().min(1).max(1000),
             }),
