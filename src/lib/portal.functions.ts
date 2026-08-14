@@ -39,6 +39,38 @@ export const createDmsUser = createServerFn({ method: "POST" })
     return createDmsAccount(context.supabase, context.userId, data);
   });
 
+export const saveSubjectDefinition = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        id: z.string().uuid().optional(),
+        level: z.enum(["L1", "L2", "L3", "L4", "L5"]),
+        code: z.string().min(1).max(20),
+        name: z.string().min(2).max(120),
+        category: z.enum(["fixed", "changeable", "optional"]),
+        totalMarks: z.number().int().min(1).max(1000),
+        passingMarks: z.number().int().min(0).max(1000),
+        theoryMarks: z.number().int().min(0).max(1000),
+        practicalMarks: z.number().int().min(0).max(1000),
+        active: z.boolean(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { saveSubject } = await import("./portal.server");
+    return saveSubject(context.supabase, context.userId, data);
+  });
+
+export const deleteSubjectDefinition = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { removeSubject } = await import("./portal.server");
+    return removeSubject(context.supabase, context.userId, data.id);
+  });
+
+
 export const createStudent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
