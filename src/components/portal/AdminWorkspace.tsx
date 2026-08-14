@@ -19,6 +19,8 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { createDmsUser, createInstitution, deleteResult, updateResultStatus } from "@/lib/portal.functions";
 import { Empty, Field, Metric, Panel, StatusChip, Surface, type Overview } from "@/components/portal/shell";
+import { SubjectCatalogue } from "@/components/portal/SubjectCatalogue";
+
 import { errorMessage } from "@/lib/utils";
 
 const DECISIONS = [
