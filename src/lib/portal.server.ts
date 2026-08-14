@@ -129,6 +129,7 @@ export type StudentInput = {
 };
 
 export async function addStudent(client: Client, userId: string, input: StudentInput) {
+  if (!input.institutionId) throw new Error("No institution is linked to this account. Ask an administrator to assign one.");
   const { data, error } = await client
     .from("students")
     .insert({
@@ -148,7 +149,15 @@ export async function addStudent(client: Client, userId: string, input: StudentI
     })
     .select("id, full_name, expires_at")
     .single();
-  if (error) throw error;
+  if (error) {
+    if (error.code === "23505") {
+      throw new Error(`Student number "${input.studentNumber}" already exists for this institution. Use a different number.`);
+    }
+    if (error.code === "42501") {
+      throw new Error("This account is not permitted to add learners for the selected institution.");
+    }
+    throw new Error(error.message || "The learner record could not be saved.");
+  }
   return data;
 }
 
