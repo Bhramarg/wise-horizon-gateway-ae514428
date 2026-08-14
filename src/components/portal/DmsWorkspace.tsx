@@ -252,7 +252,7 @@ function SubmissionWizard({
     setTagTest("idle");
     setPushed(false);
     setGuardians([{ relation: "Father", name: "" }]);
-    setMarks([{ subject: "", score: "", maxScore: "100" }]);
+    setMarks(data.subjects.filter((item) => item.level === level && item.active && item.category !== "optional").map(toRow));
   }
 
   const nfcSupported = typeof window !== "undefined" && "NDEFReader" in window;
