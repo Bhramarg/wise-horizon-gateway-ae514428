@@ -62,6 +62,8 @@ type MarkRow = { subject: string; score: string; maxScore: string; code?: string
 type SubjectRow = Overview["subjects"][number];
 
 const LEVELS = ["L1", "L2", "L3", "L4", "L5"] as const;
+const selectClass = "h-9 w-full rounded-md border border-input bg-background px-3 text-sm disabled:opacity-70";
+
 
 const toRow = (subject: SubjectRow): MarkRow => ({
   subject: subject.name,
