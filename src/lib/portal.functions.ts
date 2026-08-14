@@ -297,7 +297,16 @@ export const createCertificateTemplate = createServerFn({ method: "POST" })
 export const saveTemplateVersion = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => 
-    z.object({ version_id: z.string().uuid(), html: z.string(), css: z.string(), background_asset: z.string(), metadata: z.any() }).parse(input)
+    z.object({ 
+      version_id: z.string().uuid(), 
+      html: z.string(), 
+      css: z.string(), 
+      background_asset: z.string(), 
+      page2_html: z.string().optional(),
+      page2_css: z.string().optional(),
+      page2_background_asset: z.string().optional(),
+      metadata: z.any() 
+    }).parse(input)
   )
   .handler(async ({ data, context }) => {
     const { saveTemplateVersion: save } = await import("./portal.templates.server");

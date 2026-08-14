@@ -183,11 +183,22 @@ function TemplateList({ onEdit }: { onEdit: (t: { id: string, version_id: string
 }
 
 function TemplateEditorView({ template, onBack }: { template: { id: string, version_id: string } | null, onBack: () => void }) {
+  const [activePage, setActivePage] = useState<1 | 2>(1);
+
+  // Page 1 state
   const [backgroundUrl, setBackgroundUrl] = useState("");
   const [previewUrl, setPreviewUrl] = useState("");
   const [fields, setFields] = useState<CertificateField[]>([]);
   const [customHtml, setCustomHtml] = useState("");
   const [customCss, setCustomCss] = useState("");
+
+  // Page 2 state
+  const [page2BackgroundUrl, setPage2BackgroundUrl] = useState("");
+  const [page2PreviewUrl, setPage2PreviewUrl] = useState("");
+  const [page2Fields, setPage2Fields] = useState<CertificateField[]>([]);
+  const [page2CustomHtml, setPage2CustomHtml] = useState("");
+  const [page2CustomCss, setPage2CustomCss] = useState("");
+
   const [activeTab, setActiveTab] = useState<"visual"|"code">("visual");
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -210,6 +221,8 @@ function TemplateEditorView({ template, onBack }: { template: { id: string, vers
         const layout = await getFn({ data: { version_id: template.version_id } });
         if (layout) {
           setBackgroundUrl(layout.background_asset || "");
+          setPage2BackgroundUrl(layout.page2_background_asset || "");
+          
           const f = layout.metadata as any;
           if (Array.isArray(f)) {
             setFields(f);
@@ -217,8 +230,11 @@ function TemplateEditorView({ template, onBack }: { template: { id: string, vers
             setCustomCss(layout.css || "");
           } else if (f) {
             setFields(f.elements || []);
+            setPage2Fields(f.page2_elements || []);
             setCustomHtml(layout.html || "");
             setCustomCss(layout.css || "");
+            setPage2CustomHtml(layout.page2_html || "");
+            setPage2CustomCss(layout.page2_css || "");
           }
         }
       } catch (e) {
@@ -229,24 +245,25 @@ function TemplateEditorView({ template, onBack }: { template: { id: string, vers
   }, [template, getFn]);
 
   useEffect(() => {
-    async function resolvePreview() {
-      if (!backgroundUrl) {
-        setPreviewUrl("");
+    async function resolvePreview(url: string, setter: (u: string) => void) {
+      if (!url) {
+        setter("");
         return;
       }
-      if (backgroundUrl.startsWith("http") || backgroundUrl.startsWith("data:")) {
-        setPreviewUrl(backgroundUrl);
+      if (url.startsWith("http") || url.startsWith("data:")) {
+        setter(url);
       } else {
         try {
-          const res = await signedUrlFn({ data: { bucket: "student-files", path: backgroundUrl } });
-          setPreviewUrl(res.url);
+          const res = await signedUrlFn({ data: { bucket: "student-files", path: url } });
+          setter(res.url);
         } catch (e) {
           console.error("Failed to get signed URL for background", e);
         }
       }
     }
-    resolvePreview();
-  }, [backgroundUrl, signedUrlFn]);
+    resolvePreview(backgroundUrl, setPreviewUrl);
+    resolvePreview(page2BackgroundUrl, setPage2PreviewUrl);
+  }, [backgroundUrl, page2BackgroundUrl, signedUrlFn]);
 
   async function handleSave() {
     if (!template?.version_id) return;
@@ -256,7 +273,14 @@ function TemplateEditorView({ template, onBack }: { template: { id: string, vers
       if (customHtml) {
         const errors = validateTemplateHtml(customHtml);
         if (errors.length > 0) {
-          setMessage(`Cannot save. Invalid placeholders found: ${errors.join(", ")}`);
+          setMessage(`Cannot save. Invalid placeholders on Page 1: ${errors.join(", ")}`);
+          return;
+        }
+      }
+      if (page2CustomHtml) {
+        const errors = validateTemplateHtml(page2CustomHtml);
+        if (errors.length > 0) {
+          setMessage(`Cannot save. Invalid placeholders on Page 2: ${errors.join(", ")}`);
           return;
         }
       }
@@ -267,7 +291,10 @@ function TemplateEditorView({ template, onBack }: { template: { id: string, vers
           background_asset: backgroundUrl, 
           html: customHtml,
           css: customCss,
-          metadata: { elements: fields }
+          page2_background_asset: page2BackgroundUrl,
+          page2_html: page2CustomHtml,
+          page2_css: page2CustomCss,
+          metadata: { elements: fields, page2_elements: page2Fields }
         } 
       });
       setMessage(`Template saved successfully.`);
@@ -316,8 +343,12 @@ function TemplateEditorView({ template, onBack }: { template: { id: string, vers
     try {
       setIsUploading(true);
       const path = await uploadTo("student-files", "templates", file);
-      setBackgroundUrl(path);
-      setMessage("Template image uploaded.");
+      if (activePage === 1) {
+        setBackgroundUrl(path);
+      } else {
+        setPage2BackgroundUrl(path);
+      }
+      setMessage(`Template image uploaded for Page ${activePage}.`);
     } catch (err) {
       setMessage(errorMessage(err, "Failed to upload image."));
     } finally {
@@ -329,31 +360,27 @@ function TemplateEditorView({ template, onBack }: { template: { id: string, vers
     const newField: CertificateField = {
       id: "f" + Math.random().toString(36).slice(2, 9),
       name: placeholder || "Custom Text",
-      xPct: 0.1,
-      yPct: 0.1,
-      fontSize: 16,
-      color: "#000000",
-      fontFamily: "Inter, sans-serif",
-      bold: false,
-      italic: false,
-      align: "left",
-      multiline: false,
-      widthPct: 0.6,
+      xPct: 0.1, yPct: 0.1, fontSize: 16, color: "#000000", fontFamily: "Inter, sans-serif",
+      bold: false, italic: false, align: "left", multiline: false, widthPct: 0.6,
     };
-    setFields([...fields, newField]);
+    if (activePage === 1) setFields([...fields, newField]);
+    else setPage2Fields([...page2Fields, newField]);
     setSelectedId(newField.id);
   }
 
   function updateField(id: string, patch: Partial<CertificateField>) {
-    setFields((prev) => prev.map((f) => (f.id === id ? { ...f, ...patch } : f)));
+    if (activePage === 1) setFields((prev) => prev.map((f) => (f.id === id ? { ...f, ...patch } : f)));
+    else setPage2Fields((prev) => prev.map((f) => (f.id === id ? { ...f, ...patch } : f)));
   }
 
   function deleteField(id: string) {
-    setFields((prev) => prev.filter((f) => f.id !== id));
+    if (activePage === 1) setFields((prev) => prev.filter((f) => f.id !== id));
+    else setPage2Fields((prev) => prev.filter((f) => f.id !== id));
     if (selectedId === id) setSelectedId(null);
   }
 
-  const selectedField = fields.find((f) => f.id === selectedId);
+  const activeFields = activePage === 1 ? fields : page2Fields;
+  const selectedField = activeFields.find((f) => f.id === selectedId);
 
   // Drag logic
   const [dragging, setDragging] = useState<{ id: string; rect: DOMRect } | null>(null);
@@ -361,7 +388,7 @@ function TemplateEditorView({ template, onBack }: { template: { id: string, vers
   useEffect(() => {
     function onMouseMove(e: MouseEvent) {
       if (!dragging) return;
-      const f = fields.find((x) => x.id === dragging.id);
+      const f = activeFields.find((x) => x.id === dragging.id);
       if (!f) return;
       let xPct = (e.clientX - dragging.rect.left) / dragging.rect.width;
       let yPct = (e.clientY - dragging.rect.top) / dragging.rect.height;
@@ -382,7 +409,7 @@ function TemplateEditorView({ template, onBack }: { template: { id: string, vers
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("mouseup", onMouseUp);
     };
-  }, [dragging, fields]);
+  }, [dragging, activeFields]);
 
   return (
     <div className="space-y-6">
@@ -397,16 +424,27 @@ function TemplateEditorView({ template, onBack }: { template: { id: string, vers
         <div className="w-full md:w-80 flex-shrink-0 space-y-6">
           <Panel title="Layout Settings" icon={FileImage}>
             <div className="space-y-4">
-              <div className="flex flex-col mb-4">
-                <span className="text-sm font-bold text-foreground">{template?.id}</span>
-                <span className="text-xs text-muted-foreground mt-1">Editing Draft Version</span>
+              <div className="flex bg-muted p-1 rounded-md mb-2">
+                <button 
+                  className={`flex-1 text-xs font-medium py-1.5 rounded ${activePage === 1 ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"}`}
+                  onClick={() => { setActivePage(1); setSelectedId(null); }}
+                >
+                  Page 1
+                </button>
+                <button 
+                  className={`flex-1 text-xs font-medium py-1.5 rounded ${activePage === 2 ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"}`}
+                  onClick={() => { setActivePage(2); setSelectedId(null); }}
+                >
+                  Page 2
+                </button>
               </div>
+
               <div>
-                <label className="text-xs font-medium mb-1 block">Background Image</label>
+                <label className="text-xs font-medium mb-1 block">Background Image (Page {activePage})</label>
                 <div className="flex flex-col gap-2">
                   <Input
-                    value={backgroundUrl}
-                    onChange={(e) => setBackgroundUrl(e.target.value)}
+                    value={activePage === 1 ? backgroundUrl : page2BackgroundUrl}
+                    onChange={(e) => activePage === 1 ? setBackgroundUrl(e.target.value) : setPage2BackgroundUrl(e.target.value)}
                     placeholder="URL or upload a file..."
                   />
                   <div className="flex items-center gap-2">
@@ -477,8 +515,8 @@ function TemplateEditorView({ template, onBack }: { template: { id: string, vers
                 </div>
                 
                 <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                  {fields.length === 0 && <p className="text-xs text-muted-foreground">No fields yet.</p>}
-                  {fields.map((f) => (
+                  {activeFields.length === 0 && <p className="text-xs text-muted-foreground">No fields on this page.</p>}
+                  {activeFields.map((f) => (
                     <div
                       key={f.id}
                       className={`flex items-center justify-between p-2 text-sm border rounded cursor-pointer ${
@@ -541,21 +579,21 @@ function TemplateEditorView({ template, onBack }: { template: { id: string, vers
                   Write custom HTML and CSS to completely override the base layout. Use placeholders like <code>{`{{ learner_name }}`}</code> or <code>{`{{ marks_table }}`}</code>.
                 </p>
                 <div>
-                  <label className="text-xs font-medium mb-1 block">Custom HTML</label>
+                  <label className="text-xs font-medium mb-1 block">Custom HTML (Page {activePage})</label>
                   <textarea 
                     className="w-full h-48 text-xs font-mono p-2 border rounded-md bg-background focus:outline-none focus:ring-1 focus:ring-primary"
                     placeholder={`<div class="title">{{ learner_name }}</div>\n{{ marks_table }}`}
-                    value={customHtml}
-                    onChange={(e) => setCustomHtml(e.target.value)}
+                    value={activePage === 1 ? customHtml : page2CustomHtml}
+                    onChange={(e) => activePage === 1 ? setCustomHtml(e.target.value) : setPage2CustomHtml(e.target.value)}
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium mb-1 block">Custom CSS</label>
+                  <label className="text-xs font-medium mb-1 block">Custom CSS (Page {activePage})</label>
                   <textarea 
                     className="w-full h-32 text-xs font-mono p-2 border rounded-md bg-background focus:outline-none focus:ring-1 focus:ring-primary"
                     placeholder={`.title { font-size: 24px; color: navy; }`}
-                    value={customCss}
-                    onChange={(e) => setCustomCss(e.target.value)}
+                    value={activePage === 1 ? customCss : page2CustomCss}
+                    onChange={(e) => activePage === 1 ? setCustomCss(e.target.value) : setPage2CustomCss(e.target.value)}
                   />
                 </div>
               </div>
@@ -570,23 +608,28 @@ function TemplateEditorView({ template, onBack }: { template: { id: string, vers
             ref={docFrameRef}
             style={{ width: "800px", aspectRatio: "0.707" }} // Portrait A4 approx
           >
-            {previewUrl ? (
-              <img src={previewUrl} alt="Background" className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none" />
-            ) : (
-              <div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-sm bg-muted/20">
-                No background image
-              </div>
-            )}
-            
-            {customCss && <style dangerouslySetInnerHTML={{ __html: customCss }} />}
             {(() => {
-              if (!customHtml) return null;
-              let renderedHtml = customHtml;
+              const currentPreviewUrl = activePage === 1 ? previewUrl : page2PreviewUrl;
+              return currentPreviewUrl ? (
+                <img src={currentPreviewUrl} alt="Background" className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none" />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-sm bg-muted/20">
+                  No background image
+                </div>
+              );
+            })()}
+            
+            {(() => {
+              const currentCss = activePage === 1 ? customCss : page2CustomCss;
+              return currentCss ? <style dangerouslySetInnerHTML={{ __html: currentCss }} /> : null;
+            })()}
+            
+            {(() => {
+              const currentHtml = activePage === 1 ? customHtml : page2CustomHtml;
+              if (!currentHtml) return null;
+              let renderedHtml = currentHtml;
               const fieldMap = generatePlaceholderMap(SAMPLE_STUDENT_DATA);
               
-              // We don't have full marks table building logic here, but we can at least map basic text variables.
-              // For a true 1:1, we should generate marks table and summary table HTML.
-              // We will just do basic placeholder replacements.
               const marksTableHtml = `<div style="padding: 10px; border: 1px dashed red; text-align: center; font-weight: bold; background: #ffebeb;">Marks Table Sample</div>`;
               const summaryTableHtml = `<div style="padding: 10px; border: 1px dashed blue; text-align: center; font-weight: bold; background: #ebf0ff;">Summary Table Sample</div>`;
               
@@ -608,7 +651,7 @@ function TemplateEditorView({ template, onBack }: { template: { id: string, vers
               );
             })()}
             
-            {fields.map((f) => {
+            {activeFields.map((f) => {
               const left = f.xPct * 100 + "%";
               const top = f.yPct * 100 + "%";
               // Font size scaling assumption for preview

@@ -45,6 +45,9 @@ export async function saveTemplateVersion(client: Client, userId: string, input:
   html: string; 
   css: string; 
   background_asset: string; 
+  page2_html?: string;
+  page2_css?: string;
+  page2_background_asset?: string;
   metadata: any 
 }) {
   const { error } = await client
@@ -53,6 +56,9 @@ export async function saveTemplateVersion(client: Client, userId: string, input:
       html: input.html,
       css: input.css,
       background_asset: input.background_asset,
+      page2_html: input.page2_html,
+      page2_css: input.page2_css,
+      page2_background_asset: input.page2_background_asset,
       metadata: input.metadata
     })
     .eq("id", input.version_id);

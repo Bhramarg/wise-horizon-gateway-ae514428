@@ -40,9 +40,9 @@ export async function generateCertificatePdf(html: string, options?: PdfOptions)
     });
 
     // Check for overflow: A4 height at 96DPI is ~1123px.
-    // We add a tiny buffer (2px) for fractional pixels.
+    // 2 pages = 2246px. We add a small buffer (4px) to evaluate strictly 2 pages.
     const isOverflowing = await page.evaluate(() => {
-      return document.documentElement.scrollHeight > 1125;
+      return document.documentElement.scrollHeight > 2250;
     });
 
     if (isOverflowing) {

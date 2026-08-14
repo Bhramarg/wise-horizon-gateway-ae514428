@@ -157,6 +157,9 @@ export type Database = {
           html: string | null
           css: string | null
           background_asset: string | null
+          page2_html: string | null
+          page2_css: string | null
+          page2_background_asset: string | null
           paper_size: string | null
           orientation: string | null
           metadata: Json | null
@@ -171,6 +174,9 @@ export type Database = {
           html?: string | null
           css?: string | null
           background_asset?: string | null
+          page2_html?: string | null
+          page2_css?: string | null
+          page2_background_asset?: string | null
           paper_size?: string | null
           orientation?: string | null
           metadata?: Json | null
@@ -185,6 +191,9 @@ export type Database = {
           html?: string | null
           css?: string | null
           background_asset?: string | null
+          page2_html?: string | null
+          page2_css?: string | null
+          page2_background_asset?: string | null
           paper_size?: string | null
           orientation?: string | null
           metadata?: Json | null
