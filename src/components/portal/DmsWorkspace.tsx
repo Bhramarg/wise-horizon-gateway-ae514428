@@ -141,7 +141,7 @@ export function DmsWorkspace({ data, refresh }: { data: Overview; refresh: () =>
       </TabsContent>
 
       <TabsContent value="new">
-        <SubmissionWizard data={data} institutionId={institutionId} refresh={refresh} onBulk={() => setTab("bulk")} />
+        <SubmissionWizard data={data} institutionId={institutionId} refresh={refresh} onBulk={() => setTab("bulk")} onDraft={() => setTab("submissions")} />
       </TabsContent>
 
       <TabsContent value="submissions">
@@ -193,11 +193,13 @@ function SubmissionWizard({
   institutionId,
   refresh,
   onBulk,
+  onDraft,
 }: {
   data: Overview;
   institutionId: string;
   refresh: () => Promise<unknown>;
   onBulk: () => void;
+  onDraft?: () => void;
 }) {
   const studentFn = useServerFn(createStudent);
   const resultFn = useServerFn(createResult);
@@ -421,6 +423,9 @@ function SubmissionWizard({
                 <Button type="button" variant="ghost" onClick={onBulk}>
                   Bulk upload instead
                 </Button>
+                <Button type="button" variant="ghost" className="text-muted-foreground ml-auto" onClick={() => { reset(); onDraft?.(); }}>
+                  Save as draft
+                </Button>
               </div>
             </form>
           </Panel>
@@ -573,9 +578,14 @@ function SubmissionWizard({
                   <p className="font-display text-2xl font-semibold text-azure">{totals.grade}</p>
                 </Surface>
               </div>
-              <Button type="submit" disabled={busy}>
-                {busy ? <Loader2 className="animate-spin" /> : null} Generate marksheet & continue
-              </Button>
+              <div className="flex items-center gap-3">
+                <Button type="submit" disabled={busy}>
+                  {busy ? <Loader2 className="animate-spin" /> : null} Generate marksheet & continue
+                </Button>
+                <Button type="button" variant="ghost" className="text-muted-foreground ml-auto" onClick={() => { reset(); onDraft?.(); }}>
+                  Save as draft
+                </Button>
+              </div>
             </form>
           </Panel>
         ) : null}
@@ -601,9 +611,14 @@ function SubmissionWizard({
               <Field label="Student portfolio" hint="PDF, ZIP or image bundle">
                 <Input name="portfolio" type="file" accept="application/pdf,application/zip,image/*" required />
               </Field>
-              <Button type="submit" disabled={busy}>
-                {busy ? <Loader2 className="animate-spin" /> : null} Upload portfolio & continue
-              </Button>
+              <div className="flex items-center gap-3">
+                <Button type="submit" disabled={busy}>
+                  {busy ? <Loader2 className="animate-spin" /> : null} Upload portfolio & continue
+                </Button>
+                <Button type="button" variant="ghost" className="text-muted-foreground ml-auto" onClick={() => { reset(); onDraft?.(); }}>
+                  Save as draft
+                </Button>
+              </div>
             </form>
           </Panel>
         ) : null}
@@ -635,6 +650,9 @@ function SubmissionWizard({
                     <QrCode /> Download QR
                   </Button>
                   <Button onClick={() => setStep(4)}>Continue to NTAG</Button>
+                  <Button type="button" variant="ghost" className="text-muted-foreground ml-auto" onClick={() => { reset(); onDraft?.(); }}>
+                    Save as draft
+                  </Button>
                 </div>
               </div>
             ) : (
@@ -748,6 +766,21 @@ function SubmissionWizard({
                   >
                     Revoke & reset tag
                   </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="border-dashed ml-auto"
+                    disabled={busy || tagWritten}
+                    onClick={() =>
+                      void run(async () => {
+                        await writtenFn({ data: { tagId: tag.id, locked: true } });
+                        setTagWritten(true);
+                        await refresh();
+                      })
+                    }
+                  >
+                    Bypass NFC
+                  </Button>
                 </div>
                 {tagTest !== "idle" ? (
                   <p className={tagTest === "pass" ? "text-sm text-emerald-600 dark:text-emerald-400" : "text-sm text-destructive"}>
@@ -757,9 +790,14 @@ function SubmissionWizard({
                 {!nfcSupported ? (
                   <p className="text-xs text-muted-foreground">Web NFC needs a compatible Android browser over HTTPS.</p>
                 ) : null}
-                <Button variant="outline" disabled={!tagWritten} onClick={() => setStep(5)}>
-                  Continue to final submission
-                </Button>
+                <div className="flex items-center gap-3">
+                  <Button variant="outline" disabled={!tagWritten} onClick={() => setStep(5)}>
+                    Continue to final submission
+                  </Button>
+                  <Button type="button" variant="ghost" className="text-muted-foreground ml-auto" onClick={() => { reset(); onDraft?.(); }}>
+                    Save as draft
+                  </Button>
+                </div>
               </div>
             )}
           </Panel>
