@@ -40,7 +40,12 @@ function Portal() {
     });
   }, [navigate]);
 
-  const { data, isLoading, error } = useQuery({ queryKey: ["portal-overview"], queryFn: () => overviewFn() });
+  const isServer = typeof document === 'undefined';
+  const { data, isLoading, error } = useQuery({ 
+    queryKey: ["portal-overview"], 
+    queryFn: () => overviewFn(),
+    enabled: !isServer,
+  });
   const refresh = () => queryClient.invalidateQueries({ queryKey: ["portal-overview"] });
 
   async function signOut() {
@@ -50,7 +55,7 @@ function Portal() {
     navigate({ to: "/my-wise", replace: true });
   }
 
-  if (isLoading) return <Loading />;
+  if (isLoading || isServer) return <Loading />;
   if (error || !data)
     return (
       <PortalMessage title="Portal unavailable" body="The secure workspace could not be loaded. Your session may have expired.">
