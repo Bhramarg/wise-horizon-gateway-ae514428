@@ -13,7 +13,7 @@ function WiseMark({ className = "" }: { className?: string }) {
     <span className={`flex items-center gap-3 ${className}`}>
       <img
         src={wiseLogo.url}
-        alt="WISE — Weqsc International Scholastic Examination"
+        alt="WISE — Weqsc International Secondary Examination"
         width={44}
         height={44}
         className="size-11 shrink-0 object-contain"
@@ -45,7 +45,7 @@ function TickerBand() {
     <div className="relative overflow-hidden bg-navy-deep text-white">
       <div className="pointer-events-none absolute inset-y-0 left-0 z-10 flex items-center gap-2 bg-navy-deep pl-4 pr-6 text-[10px] uppercase tracking-[0.24em] text-azure-soft">
         <Radio className="size-3 animate-pulse" />
-        <span className="hidden sm:inline">European &amp; UNESCO wire</span>
+        <span className="hidden sm:inline">WISE Wire</span>
       </div>
       <div className="flex w-max animate-marquee items-center py-2 pl-56">
         {[...items, ...items].map((item, index) => (

@@ -15,14 +15,14 @@ export function SiteFooter() {
           <div>
             <img
               src={wiseLogo.url}
-              alt="WISE — Weqsc International Scholastic Examination"
+              alt="WISE — Weqsc International Secondary Examination"
               width={72}
               height={72}
               loading="lazy"
               className="size-[72px] object-contain"
             />
             <p className="mt-5 font-display text-2xl font-light tracking-tight">
-              WISE — Weqsc International Scholastic Examination
+              WISE — Weqsc International Secondary Examination
             </p>
             <p className="mt-4 max-w-sm text-sm leading-relaxed text-white/60">
               A WEQSC accreditation body seated in Switzerland, operating within the UNESCO

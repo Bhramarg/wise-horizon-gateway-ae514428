@@ -79,7 +79,7 @@ function MyWise() {
           <Link to="/" className="flex items-center gap-3">
             <img
               src={wiseLogo.url}
-              alt="WISE — Weqsc International Scholastic Examination"
+              alt="WISE — Weqsc International Secondary Examination"
               width={44}
               height={44}
               className="size-11 object-contain"
