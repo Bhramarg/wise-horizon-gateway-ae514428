@@ -58,7 +58,20 @@ async function uploadTo(bucket: "student-files" | "portfolios", folder: string, 
 }
 
 type Guardian = { relation: string; name: string; occupation?: string; contact?: string };
-type MarkRow = { subject: string; score: string; maxScore: string };
+type MarkRow = { subject: string; score: string; maxScore: string; code?: string; category?: string; passing?: number };
+type SubjectRow = Overview["subjects"][number];
+
+const LEVELS = ["L1", "L2", "L3", "L4", "L5"] as const;
+
+const toRow = (subject: SubjectRow): MarkRow => ({
+  subject: subject.name,
+  code: subject.code,
+  category: subject.category,
+  passing: subject.passing_marks,
+  score: "",
+  maxScore: String(subject.total_marks),
+});
+
 
 export function DmsWorkspace({ data, refresh }: { data: Overview; refresh: () => Promise<unknown> }) {
   const institutionId = data.memberships.find((item) => item.active)?.institution_id ?? data.institutions[0]?.id ?? "";
