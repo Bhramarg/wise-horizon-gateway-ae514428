@@ -210,7 +210,14 @@ function SubmissionWizard({
   const [pushed, setPushed] = useState(false);
 
   const [guardians, setGuardians] = useState<Guardian[]>([{ relation: "Father", name: "" }]);
-  const [marks, setMarks] = useState<MarkRow[]>([{ subject: "", score: "", maxScore: "100" }]);
+  const [level, setLevel] = useState<string>("L1");
+  const [marks, setMarks] = useState<MarkRow[]>(() =>
+    data.subjects.filter((item) => item.level === "L1" && item.active && item.category !== "optional").map(toRow),
+  );
+  const optionalSubjects = data.subjects.filter(
+    (item) => item.level === level && item.active && item.category === "optional" && !marks.some((row) => row.code === item.code),
+  );
+
 
   const totals = useMemo(() => {
     const obtained = marks.reduce((sum, row) => sum + (Number(row.score) || 0), 0);
