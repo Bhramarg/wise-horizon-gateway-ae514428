@@ -315,6 +315,54 @@ export type Database = {
           },
         ]
       }
+      subjects: {
+        Row: {
+          active: boolean
+          category: Database["public"]["Enums"]["subject_category"]
+          code: string
+          created_at: string
+          created_by: string | null
+          id: string
+          level: string
+          name: string
+          passing_marks: number
+          practical_marks: number
+          theory_marks: number
+          total_marks: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          category?: Database["public"]["Enums"]["subject_category"]
+          code: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          level: string
+          name: string
+          passing_marks?: number
+          practical_marks?: number
+          theory_marks?: number
+          total_marks?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          category?: Database["public"]["Enums"]["subject_category"]
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          level?: string
+          name?: string
+          passing_marks?: number
+          practical_marks?: number
+          theory_marks?: number
+          total_marks?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       tag_events: {
         Row: {
           actor_id: string | null
@@ -391,6 +439,7 @@ export type Database = {
         | "revoked"
         | "on_hold"
         | "review_required"
+      subject_category: "fixed" | "changeable" | "optional"
       tag_event_type:
         | "prepared"
         | "written"
@@ -537,6 +586,7 @@ export const Constants = {
         "on_hold",
         "review_required",
       ],
+      subject_category: ["fixed", "changeable", "optional"],
       tag_event_type: [
         "prepared",
         "written",

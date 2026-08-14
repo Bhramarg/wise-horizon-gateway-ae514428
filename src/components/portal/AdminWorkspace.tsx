@@ -2,7 +2,9 @@ import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import {
   Award,
+  BookOpen,
   Building2,
+
   CheckCircle2,
   LayoutDashboard,
   Radio,
@@ -17,6 +19,8 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { createDmsUser, createInstitution, deleteResult, updateResultStatus } from "@/lib/portal.functions";
 import { Empty, Field, Metric, Panel, StatusChip, Surface, type Overview } from "@/components/portal/shell";
+import { SubjectCatalogue } from "@/components/portal/SubjectCatalogue";
+
 import { errorMessage } from "@/lib/utils";
 
 const DECISIONS = [
@@ -63,10 +67,14 @@ export function AdminWorkspace({ data, refresh }: { data: Overview; refresh: () 
         <TabsTrigger value="institutions" className="gap-2 rounded-lg px-4 py-2 text-xs">
           <Building2 className="size-4" /> Institutions
         </TabsTrigger>
+        <TabsTrigger value="subjects" className="gap-2 rounded-lg px-4 py-2 text-xs">
+          <BookOpen className="size-4" /> Subjects
+        </TabsTrigger>
         <TabsTrigger value="accounts" className="gap-2 rounded-lg px-4 py-2 text-xs">
           <UserPlus className="size-4" /> Accounts
         </TabsTrigger>
       </TabsList>
+
 
       {message ? <Surface className="p-4 text-sm text-muted-foreground">{message}</Surface> : null}
 
@@ -230,7 +238,12 @@ export function AdminWorkspace({ data, refresh }: { data: Overview; refresh: () 
         </Panel>
       </TabsContent>
 
+      <TabsContent value="subjects">
+        <SubjectCatalogue data={data} refresh={refresh} />
+      </TabsContent>
+
       <TabsContent value="accounts">
+
         <Panel title="Create DMS account" description="Temporary password with a mandatory change at first sign-in." icon={UserPlus}>
           <form
             className="grid gap-4 sm:grid-cols-2"
