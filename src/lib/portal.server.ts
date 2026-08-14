@@ -38,7 +38,7 @@ export async function getPortalOverviewForUser(client: Client, userId: string, e
       // retention sweep is best-effort
     }
   }
-  const [{ data: institutions }, { data: students }, { data: results }, { data: tags }] = await Promise.all([
+  const [{ data: institutions }, { data: students }, { data: results }, { data: tags }, { data: subjects }] = await Promise.all([
     client.from("institutions").select("id, name, code, active").order("name"),
     client
       .from("students")
@@ -57,6 +57,11 @@ export async function getPortalOverviewForUser(client: Client, userId: string, e
       .select("id, result_id, ndef_payload, status, password_protected, written_at, locked_at, last_test_at, write_counter")
       .order("created_at", { ascending: false })
       .limit(200),
+    client
+      .from("subjects")
+      .select("id, level, code, name, category, total_marks, passing_marks, theory_marks, practical_marks, active")
+      .order("level")
+      .order("code"),
   ]);
   return {
     userId,
@@ -67,8 +72,55 @@ export async function getPortalOverviewForUser(client: Client, userId: string, e
     students: students ?? [],
     results: results ?? [],
     tags: tags ?? [],
+    subjects: subjects ?? [],
   };
 }
+
+export type SubjectInput = {
+  id?: string | undefined;
+  level: string;
+  code: string;
+  name: string;
+  category: Database["public"]["Enums"]["subject_category"];
+  totalMarks: number;
+  passingMarks: number;
+  theoryMarks: number;
+  practicalMarks: number;
+  active: boolean;
+};
+
+export async function saveSubject(client: Client, userId: string, input: SubjectInput) {
+  await assertAdmin(client, userId);
+  const row = {
+    level: input.level,
+    code: input.code.trim().toUpperCase(),
+    name: input.name.trim(),
+    category: input.category,
+    total_marks: input.totalMarks,
+    passing_marks: input.passingMarks,
+    theory_marks: input.theoryMarks,
+    practical_marks: input.practicalMarks,
+    active: input.active,
+    created_by: userId,
+  };
+  const query = input.id
+    ? client.from("subjects").update(row).eq("id", input.id).select("id").single()
+    : client.from("subjects").insert(row).select("id").single();
+  const { data, error } = await query;
+  if (error) {
+    if (error.code === "23505") throw new Error(`Subject code "${row.code}" already exists for ${input.level}.`);
+    throw new Error(error.message || "The subject could not be saved.");
+  }
+  return data;
+}
+
+export async function removeSubject(client: Client, userId: string, id: string) {
+  await assertAdmin(client, userId);
+  const { error } = await client.from("subjects").delete().eq("id", id);
+  if (error) throw error;
+  return { ok: true as const };
+}
+
 
 export async function claimInitialAdmin(userId: string) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
