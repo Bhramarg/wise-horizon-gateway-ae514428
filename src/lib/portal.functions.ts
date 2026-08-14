@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-export const getPortalOverview = createServerFn({ method: "GET" })
+export const getPortalOverview = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { getPortalOverviewForUser } = await import("./portal.server");
@@ -278,7 +278,7 @@ export const getCertificateLayout = createServerFn({ method: "POST" })
   });
 
 // --- NEW PHASE 7 TEMPLATE CRUD ---
-export const listCertificateTemplates = createServerFn({ method: "GET" })
+export const listCertificateTemplates = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { listCertificateTemplates: list } = await import("./portal.templates.server");
