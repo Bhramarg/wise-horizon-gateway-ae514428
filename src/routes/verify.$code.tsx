@@ -59,7 +59,6 @@ function VerifyPage() {
     }
   }
 
-  const getLayoutFn = useServerFn(getCertificateLayoutPublic);
   const fetchImageFn = useServerFn(fetchDriveImageAsBase64);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
