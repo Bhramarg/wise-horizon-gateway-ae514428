@@ -311,7 +311,7 @@ export const saveTemplateVersion = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { saveTemplateVersion: save } = await import("./portal.templates.server");
-    return save(context.supabase, context.userId, data);
+    return save(context.supabase, context.userId, data as any);
   });
 
 export const getTemplateVersion = createServerFn({ method: "POST" })

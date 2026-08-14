@@ -35,7 +35,7 @@ export async function generateCertificatePdf(html: string, options?: PdfOptions)
 
     // Set content and wait until network is idle to ensure all assets (fonts, images) are loaded
     await page.setContent(html, {
-      waitUntil: ["networkidle0", "domcontentloaded"],
+      waitUntil: ["load", "domcontentloaded"],
       timeout: 30000,
     });
 

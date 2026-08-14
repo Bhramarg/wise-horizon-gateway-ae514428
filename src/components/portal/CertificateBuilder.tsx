@@ -131,7 +131,7 @@ function TemplateList({ onEdit }: { onEdit: (t: { id: string, version_id: string
     try {
       const tmpl = await createFn({ data: { name: "New Template", type: "Marksheet", level: "L2" } });
       const versions = tmpl.versions || [{ id: "temp" }];
-      onEdit({ id: tmpl.id, version_id: versions[0]?.id });
+      onEdit({ id: tmpl.id, version_id: versions[0]?.id || "" });
     } catch (e) {
       console.error(e);
     }

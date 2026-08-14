@@ -180,12 +180,12 @@ export function AdminWorkspace({ data, refresh }: { data: Overview; refresh: () 
                       </Button>
                     )}
                     {s?.prev_school_doc_path && (
-                      <Button size="sm" variant="outline" onClick={() => openSignedFile("student-files", s.prev_school_doc_path)}>
+                      <Button size="sm" variant="outline" onClick={() => openSignedFile("student-files", s.prev_school_doc_path!)}>
                         View Previous Doc
                       </Button>
                     )}
                     {result.portfolio_path && (
-                      <Button size="sm" variant="outline" onClick={() => openSignedFile("portfolios", result.portfolio_path)}>
+                      <Button size="sm" variant="outline" onClick={() => openSignedFile("portfolios", result.portfolio_path!)}>
                         View Portfolio
                       </Button>
                     )}
