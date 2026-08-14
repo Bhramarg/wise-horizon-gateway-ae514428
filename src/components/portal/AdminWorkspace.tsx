@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { createDmsUser, createInstitution, deleteResult, updateResultStatus } from "@/lib/portal.functions";
 import { Empty, Field, Metric, Panel, StatusChip, Surface, type Overview } from "@/components/portal/shell";
+import { errorMessage } from "@/lib/utils";
 
 const DECISIONS = [
   { status: "issued", label: "Approve & issue" },
@@ -43,7 +44,7 @@ export function AdminWorkspace({ data, refresh }: { data: Overview; refresh: () 
       setMessage(success);
       await refresh();
     } catch (e) {
-      setMessage(e instanceof Error ? e.message : "The request failed.");
+      setMessage(errorMessage(e, "The request failed."));
     }
   }
 

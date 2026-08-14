@@ -34,6 +34,7 @@ import {
   testCertificateTag,
 } from "@/lib/portal.functions";
 import { Empty, Field, Metric, Panel, StatusChip, StepRail, Surface, type Overview } from "@/components/portal/shell";
+import { errorMessage } from "@/lib/utils";
 
 const STEPS = [
   { key: "student", label: "Learner record", icon: UserPlus },
@@ -213,7 +214,7 @@ function SubmissionWizard({
     try {
       await action();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "The request could not be completed.");
+      setError(errorMessage(e));
     } finally {
       setBusy(false);
     }
@@ -769,7 +770,7 @@ function BulkUpload({ institutionId, refresh }: { institutionId: string; refresh
                     });
                     ok += 1;
                   } catch (e) {
-                    failures.push(`${record["full_name"]}: ${e instanceof Error ? e.message : "failed"}`);
+                    failures.push(`${record["full_name"]}: ${errorMessage(e, "failed")}`);
                   }
                 }
                 setLog([`${ok} learner record(s) imported.`, ...failures].join("\n"));
