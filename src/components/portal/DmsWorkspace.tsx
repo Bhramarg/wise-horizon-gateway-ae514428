@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import QRCode from "qrcode";
 import {
@@ -61,7 +61,17 @@ type Guardian = { relation: string; name: string; occupation?: string; contact?:
 type MarkRow = { subject: string; score: string; maxScore: string; code?: string; category?: string; passing?: number };
 type SubjectRow = Overview["subjects"][number];
 
-const LEVELS = ["L1", "L2", "L3", "L4", "L5"] as const;
+const LEVELS = [
+  { id: "L2", name: "L2 - Secondary Examination" },
+  { id: "L3", name: "L3 - Higher Secondary Examination" }
+];
+
+const STREAMS = [
+  { id: "all", name: "All Subjects (Default)", codes: [] },
+  { id: "science", name: "Science", codes: ["0533", "0531", "0541", "0511", "0512", "0613"] },
+  { id: "commerce", name: "Commerce", codes: ["0411", "0413", "0311", "0410", "0412"] },
+  { id: "arts", name: "Arts / Humanities", codes: ["0222", "0312", "0314", "0313", "0532", "0421"] }
+];
 const selectClass = "h-9 w-full rounded-md border border-input bg-background px-3 text-sm disabled:opacity-70";
 
 
@@ -212,14 +222,28 @@ function SubmissionWizard({
   const [pushed, setPushed] = useState(false);
 
   const [guardians, setGuardians] = useState<Guardian[]>([{ relation: "Father", name: "" }]);
-  const [level, setLevel] = useState<string>("L1");
-  const [marks, setMarks] = useState<MarkRow[]>(() =>
-    data.subjects.filter((item) => item.level === "L1" && item.active && item.category !== "optional").map(toRow),
-  );
+  const [level, setLevel] = useState<string>("L2");
+  const [stream, setStream] = useState<string>("science");
+
+  const getInitialMarks = useCallback((lvl: string, str: string) => {
+    return data.subjects.filter((item) => {
+      if (item.level !== lvl || !item.active) return false;
+      if (item.category === "optional") return false;
+      
+      if (lvl === "L3" && str !== "all") {
+        if (item.category === "fixed") return true;
+        const activeStream = STREAMS.find(s => s.id === str);
+        return activeStream?.codes.includes(item.code);
+      }
+      return true;
+    }).map(toRow);
+  }, [data.subjects]);
+
+  const [marks, setMarks] = useState<MarkRow[]>(() => getInitialMarks("L2", "science"));
+
   const optionalSubjects = data.subjects.filter(
     (item) => item.level === level && item.active && item.category === "optional" && !marks.some((row) => row.code === item.code),
   );
-
 
   const totals = useMemo(() => {
     const obtained = marks.reduce((sum, row) => sum + (Number(row.score) || 0), 0);
@@ -254,7 +278,8 @@ function SubmissionWizard({
     setTagTest("idle");
     setPushed(false);
     setGuardians([{ relation: "Father", name: "" }]);
-    setMarks(data.subjects.filter((item) => item.level === level && item.active && item.category !== "optional").map(toRow));
+    setStream(level === "L3" ? "science" : "all");
+    setMarks(getInitialMarks(level, level === "L3" ? "science" : "all"));
   }
 
   const nfcSupported = typeof window !== "undefined" && "NDEFReader" in window;
@@ -436,20 +461,37 @@ function SubmissionWizard({
                     onChange={(event) => {
                       const next = event.target.value;
                       setLevel(next);
-                      setMarks(
-                        data.subjects
-                          .filter((item) => item.level === next && item.active && item.category !== "optional")
-                          .map(toRow),
-                      );
+                      const defaultStream = next === "L3" ? "science" : "all";
+                      setStream(defaultStream);
+                      setMarks(getInitialMarks(next, defaultStream));
                     }}
                   >
                     {LEVELS.map((item) => (
-                      <option key={item} value={item}>
-                        {item}
+                      <option key={item.id} value={item.id}>
+                        {item.name}
                       </option>
                     ))}
                   </select>
                 </Field>
+                {level === "L3" && (
+                  <Field label="Stream">
+                    <select
+                      value={stream}
+                      className={selectClass}
+                      onChange={(event) => {
+                        const next = event.target.value;
+                        setStream(next);
+                        setMarks(getInitialMarks(level, next));
+                      }}
+                    >
+                      {STREAMS.map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {item.name}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                )}
                 <Field label="Academic period">
                   <Input name="academicPeriod" required placeholder="2025 / 2026" />
                 </Field>
