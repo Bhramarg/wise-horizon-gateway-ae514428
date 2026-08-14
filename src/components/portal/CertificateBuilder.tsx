@@ -27,7 +27,11 @@ export interface CertificateLayout {
   id?: string;
   level: string;
   background_url: string | null;
-  fields: CertificateField[];
+  fields: {
+    elements: CertificateField[];
+    customHtml?: string;
+    customCss?: string;
+  };
 }
 
 const FONTS = [
@@ -64,6 +68,10 @@ export function CertificateBuilder() {
   const [backgroundUrl, setBackgroundUrl] = useState("");
   const [previewUrl, setPreviewUrl] = useState("");
   const [fields, setFields] = useState<CertificateField[]>([]);
+  const [customHtml, setCustomHtml] = useState("");
+  const [customCss, setCustomCss] = useState("");
+  const [activeTab, setActiveTab] = useState<"visual"|"code">("visual");
+
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [isUploading, setIsUploading] = useState(false);
@@ -80,11 +88,21 @@ export function CertificateBuilder() {
         const layout = await getFn({ data: { level: layoutKey } });
         if (layout) {
           setBackgroundUrl(layout.background_url || "");
-          const f = Array.isArray(layout.fields) ? (layout.fields as any as CertificateField[]) : [];
-          setFields(f);
+          const f = layout.fields as any;
+          if (Array.isArray(f)) {
+            setFields(f);
+            setCustomHtml("");
+            setCustomCss("");
+          } else if (f) {
+            setFields(f.elements || []);
+            setCustomHtml(f.customHtml || "");
+            setCustomCss(f.customCss || "");
+          }
         } else {
           setBackgroundUrl("");
           setFields([]);
+          setCustomHtml("");
+          setCustomCss("");
         }
       } catch (e) {
         console.error("Failed to load layout", e);
@@ -117,7 +135,13 @@ export function CertificateBuilder() {
   async function handleSave() {
     try {
       setMessage("");
-      await saveFn({ data: { level: layoutKey, background_url: backgroundUrl, fields: fields as any } });
+      await saveFn({ 
+        data: { 
+          level: layoutKey, 
+          background_url: backgroundUrl, 
+          fields: { elements: fields, customHtml, customCss } as any 
+        } 
+      });
       setMessage(`Layout for ${level} ${docType} saved successfully.`);
     } catch (e) {
       setMessage(errorMessage(e, "Failed to save layout."));
@@ -139,14 +163,14 @@ export function CertificateBuilder() {
     }
   }
 
-  function addField() {
+  function addField(placeholder?: string) {
     const newField: CertificateField = {
       id: "f" + Math.random().toString(36).slice(2, 9),
-      name: "Field " + (fields.length + 1),
+      name: placeholder || "Custom Text",
       xPct: 0.1,
       yPct: 0.1,
-      fontSize: 28,
-      color: "#111111",
+      fontSize: 16,
+      color: "#000000",
       fontFamily: "Inter, sans-serif",
       bold: false,
       italic: false,
@@ -261,70 +285,123 @@ export function CertificateBuilder() {
             </div>
           </Panel>
 
-          <Panel title="Placeholders" icon={Plus}>
-            <Button variant="outline" className="w-full mb-4" onClick={addField}>
-              <Plus className="mr-2 h-4 w-4" /> Add Field
-            </Button>
-            
-            <div className="space-y-2 max-h-[300px] overflow-y-auto">
-              {fields.length === 0 && <p className="text-xs text-muted-foreground">No placeholders yet.</p>}
-              {fields.map((f) => (
-                <div
-                  key={f.id}
-                  className={`flex items-center justify-between p-2 text-sm border rounded cursor-pointer ${
-                    selectedId === f.id ? "border-primary bg-primary/10" : "border-border"
-                  }`}
-                  onClick={() => setSelectedId(f.id)}
-                >
-                  <span className="truncate flex-1">{f.name}</span>
-                  <button onClick={(e) => { e.stopPropagation(); deleteField(f.id); }} className="text-destructive p-1 ml-2">
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              ))}
+          <Panel title="Builder Tools" icon={Plus}>
+            <div className="flex bg-muted p-1 rounded-md mb-4">
+              <button 
+                className={`flex-1 text-xs font-medium py-1.5 rounded ${activeTab === "visual" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"}`}
+                onClick={() => setActiveTab("visual")}
+              >
+                Visual Editor
+              </button>
+              <button 
+                className={`flex-1 text-xs font-medium py-1.5 rounded ${activeTab === "code" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"}`}
+                onClick={() => setActiveTab("code")}
+              >
+                HTML/CSS Override
+              </button>
             </div>
 
-            {selectedField && (
-              <div className="mt-6 space-y-4 border-t pt-4">
-                <h4 className="text-sm font-medium">Edit: {selectedField.name}</h4>
-                <div>
-                  <label className="text-xs font-medium mb-1 block">Field Name</label>
-                  <Input value={selectedField.name} onChange={(e) => updateField(selectedField.id, { name: e.target.value })} />
-                </div>
-                <div className="flex gap-2">
-                  <div className="flex-1">
-                    <label className="text-xs font-medium mb-1 block">Font Size</label>
-                    <Input type="number" value={selectedField.fontSize} onChange={(e) => updateField(selectedField.id, { fontSize: Number(e.target.value) })} />
-                  </div>
-                  <div className="flex-1">
-                    <label className="text-xs font-medium mb-1 block">Color</label>
-                    <Input type="color" className="h-9 px-1 py-1" value={selectedField.color} onChange={(e) => updateField(selectedField.id, { color: e.target.value })} />
-                  </div>
-                </div>
-                <div>
-                  <label className="text-xs font-medium mb-1 block">Font Family</label>
-                  <select
-                    value={selectedField.fontFamily}
-                    onChange={(e) => updateField(selectedField.id, { fontFamily: e.target.value })}
-                    className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
-                  >
-                    {FONTS.map((font) => (
-                      <option key={font} value={font}>{font}</option>
+            {activeTab === "visual" ? (
+              <>
+                <div className="mb-4">
+                  <p className="text-xs font-semibold mb-2">Available Placeholders</p>
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {["{{ learner_name }}", "{{ student_number }}", "{{ programme }}", "{{ date_of_birth }}", "{{ gender }}", "{{ caste }}", "{{ address }}", "{{ father_name }}", "{{ mother_name }}", "{{ qualification }}", "{{ academic_period }}", "{{ institution }}", "{{ total_marks }}", "{{ obtained_marks }}", "{{ percentage }}", "{{ grade }}", "{{ issued_date }}", "{{ verification_code }}"].map(p => (
+                      <span 
+                        key={p} 
+                        onClick={() => addField(p)}
+                        className="text-[10px] bg-secondary text-secondary-foreground px-2 py-1 rounded border border-border cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
+                      >
+                        {p}
+                      </span>
                     ))}
-                  </select>
+                  </div>
+                  <Button variant="outline" className="w-full text-xs" onClick={() => addField("Custom Text")}>
+                    <Plus className="mr-2 h-3 w-3" /> Add Custom Text
+                  </Button>
                 </div>
-                <div className="flex gap-2 text-xs">
-                  <Button size="sm" variant={selectedField.bold ? "default" : "outline"} onClick={() => updateField(selectedField.id, { bold: !selectedField.bold })}>Bold</Button>
-                  <Button size="sm" variant={selectedField.italic ? "default" : "outline"} onClick={() => updateField(selectedField.id, { italic: !selectedField.italic })}>Italic</Button>
+                
+                <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                  {fields.length === 0 && <p className="text-xs text-muted-foreground">No fields yet.</p>}
+                  {fields.map((f) => (
+                    <div
+                      key={f.id}
+                      className={`flex items-center justify-between p-2 text-sm border rounded cursor-pointer ${
+                        selectedId === f.id ? "border-primary bg-primary/10" : "border-border"
+                      }`}
+                      onClick={() => setSelectedId(f.id)}
+                    >
+                      <span className="truncate flex-1">{f.name}</span>
+                      <button onClick={(e) => { e.stopPropagation(); deleteField(f.id); }} className="text-destructive p-1 ml-2">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
                 </div>
-                <div className="flex gap-2 text-xs">
-                  <Button size="sm" variant={selectedField.align === "left" ? "default" : "outline"} onClick={() => updateField(selectedField.id, { align: "left" })}>Left</Button>
-                  <Button size="sm" variant={selectedField.align === "center" ? "default" : "outline"} onClick={() => updateField(selectedField.id, { align: "center" })}>Center</Button>
-                  <Button size="sm" variant={selectedField.align === "right" ? "default" : "outline"} onClick={() => updateField(selectedField.id, { align: "right" })}>Right</Button>
+
+                {selectedField && (
+                  <div className="mt-6 space-y-4 border-t pt-4">
+                    <h4 className="text-sm font-medium">Edit: {selectedField.name}</h4>
+                    <div>
+                      <label className="text-xs font-medium mb-1 block">Text / Placeholder</label>
+                      <Input value={selectedField.name} onChange={(e) => updateField(selectedField.id, { name: e.target.value })} />
+                    </div>
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <label className="text-xs font-medium mb-1 block">Font Size</label>
+                        <Input type="number" value={selectedField.fontSize} onChange={(e) => updateField(selectedField.id, { fontSize: Number(e.target.value) })} />
+                      </div>
+                      <div className="flex-1">
+                        <label className="text-xs font-medium mb-1 block">Color</label>
+                        <Input type="color" className="h-9 px-1 py-1" value={selectedField.color} onChange={(e) => updateField(selectedField.id, { color: e.target.value })} />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium mb-1 block">Font (Google Font or standard)</label>
+                      <Input 
+                        value={selectedField.fontFamily} 
+                        onChange={(e) => updateField(selectedField.id, { fontFamily: e.target.value })} 
+                        placeholder="e.g. 'Roboto', sans-serif"
+                      />
+                    </div>
+                    <div className="flex gap-2 text-xs">
+                      <Button size="sm" variant={selectedField.bold ? "default" : "outline"} onClick={() => updateField(selectedField.id, { bold: !selectedField.bold })}>Bold</Button>
+                      <Button size="sm" variant={selectedField.italic ? "default" : "outline"} onClick={() => updateField(selectedField.id, { italic: !selectedField.italic })}>Italic</Button>
+                    </div>
+                    <div className="flex gap-2 text-xs">
+                      <Button size="sm" variant={selectedField.align === "left" ? "default" : "outline"} onClick={() => updateField(selectedField.id, { align: "left" })}>Left</Button>
+                      <Button size="sm" variant={selectedField.align === "center" ? "default" : "outline"} onClick={() => updateField(selectedField.id, { align: "center" })}>Center</Button>
+                      <Button size="sm" variant={selectedField.align === "right" ? "default" : "outline"} onClick={() => updateField(selectedField.id, { align: "right" })}>Right</Button>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium mb-1 block">Max Width % (0.1 to 1)</label>
+                      <Input type="number" step="0.1" value={selectedField.widthPct} onChange={(e) => updateField(selectedField.id, { widthPct: Number(e.target.value) })} />
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="space-y-4">
+                <p className="text-xs text-muted-foreground">
+                  Write custom HTML and CSS to completely override the base layout. Use placeholders like <code>{`{{ learner_name }}`}</code> or <code>{`{{ marks_table }}`}</code>.
+                </p>
+                <div>
+                  <label className="text-xs font-medium mb-1 block">Custom HTML</label>
+                  <textarea 
+                    className="w-full h-48 text-xs font-mono p-2 border rounded-md bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+                    placeholder={`<div class="title">{{ learner_name }}</div>\n{{ marks_table }}`}
+                    value={customHtml}
+                    onChange={(e) => setCustomHtml(e.target.value)}
+                  />
                 </div>
                 <div>
-                  <label className="text-xs font-medium mb-1 block">Max Width % (0.1 to 1)</label>
-                  <Input type="number" step="0.1" value={selectedField.widthPct} onChange={(e) => updateField(selectedField.id, { widthPct: Number(e.target.value) })} />
+                  <label className="text-xs font-medium mb-1 block">Custom CSS</label>
+                  <textarea 
+                    className="w-full h-32 text-xs font-mono p-2 border rounded-md bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+                    placeholder={`.title { font-size: 24px; color: navy; }`}
+                    value={customCss}
+                    onChange={(e) => setCustomCss(e.target.value)}
+                  />
                 </div>
               </div>
             )}
@@ -344,6 +421,14 @@ export function CertificateBuilder() {
               <div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-sm bg-muted/20">
                 No background image
               </div>
+            )}
+            
+            {customCss && <style dangerouslySetInnerHTML={{ __html: customCss }} />}
+            {customHtml && (
+              <div 
+                className="absolute inset-0 overflow-hidden" 
+                dangerouslySetInnerHTML={{ __html: customHtml }} 
+              />
             )}
             
             {fields.map((f) => {

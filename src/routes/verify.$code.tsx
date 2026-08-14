@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { CheckCircle2, CircleX, Clock, Download, ShieldCheck, FileDown } from "lucide-react";
 import jsPDF from "jspdf";
@@ -36,6 +36,18 @@ function VerifyPage() {
   });
   const [key, setKey] = useState("");
   const [portfolioMessage, setPortfolioMessage] = useState("");
+  const [layout, setLayout] = useState<any>(null);
+  const getLayoutFn = useServerFn(getCertificateLayoutPublic);
+
+  useEffect(() => {
+    if (data?.qualification) {
+      getLayoutFn({ data: { level: `${data.qualification}-marksheet` } })
+        .then((res) => {
+          if (res) setLayout(res);
+        })
+        .catch((e) => console.error("Failed to load layout", e));
+    }
+  }, [data?.qualification, getLayoutFn]);
 
   async function download() {
     try {
@@ -188,7 +200,7 @@ function VerifyPage() {
       {/* Hidden off-screen template for PDF generation */}
       {data && data.state === "approved" && (
         <div style={{ position: "absolute", left: "-9999px", top: "-9999px" }}>
-           <MarksheetTemplate data={data} backgroundUrl={data.qualification === "L2" ? "/bg1.png" : "/bg2.png"} ref={marksheetRef} />
+           <MarksheetTemplate data={data} layout={layout} ref={marksheetRef} />
         </div>
       )}
     </main>
