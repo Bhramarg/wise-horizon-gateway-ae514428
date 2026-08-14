@@ -92,6 +92,33 @@ export type Database = {
           },
         ]
       }
+      certificate_layouts: {
+        Row: {
+          id: string
+          level: string
+          background_url: string | null
+          fields: Json
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          level: string
+          background_url?: string | null
+          fields?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          level?: string
+          background_url?: string | null
+          fields?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       institution_members: {
         Row: {
           active: boolean

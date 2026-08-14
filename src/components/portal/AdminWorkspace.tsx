@@ -20,6 +20,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { createDmsUser, createInstitution, deleteResult, updateResultStatus } from "@/lib/portal.functions";
 import { Empty, Field, Metric, Panel, StatusChip, Surface, type Overview } from "@/components/portal/shell";
 import { SubjectCatalogue } from "@/components/portal/SubjectCatalogue";
+import { CertificateBuilder } from "@/components/portal/CertificateBuilder";
 
 import { errorMessage } from "@/lib/utils";
 
@@ -69,6 +70,9 @@ export function AdminWorkspace({ data, refresh }: { data: Overview; refresh: () 
         </TabsTrigger>
         <TabsTrigger value="subjects" className="gap-2 rounded-lg px-4 py-2 text-xs">
           <BookOpen className="size-4" /> Subjects
+        </TabsTrigger>
+        <TabsTrigger value="builder" className="gap-2 rounded-lg px-4 py-2 text-xs">
+          <Award className="size-4" /> Builder
         </TabsTrigger>
         <TabsTrigger value="accounts" className="gap-2 rounded-lg px-4 py-2 text-xs">
           <UserPlus className="size-4" /> Accounts
@@ -240,6 +244,10 @@ export function AdminWorkspace({ data, refresh }: { data: Overview; refresh: () 
 
       <TabsContent value="subjects">
         <SubjectCatalogue data={data} refresh={refresh} />
+      </TabsContent>
+
+      <TabsContent value="builder">
+        <CertificateBuilder />
       </TabsContent>
 
       <TabsContent value="accounts">

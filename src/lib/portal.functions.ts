@@ -241,3 +241,40 @@ export const redeemPortfolio = createServerFn({ method: "POST" })
     const { redeemPortfolioKey } = await import("./portal.server");
     return redeemPortfolioKey(data.code, data.key);
   });
+
+export const saveCertificateLayout = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ level: z.string(), background_url: z.string().optional(), fields: z.any() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { saveCertificateLayout: saveLayout } = await import("./portal.server");
+    return saveLayout(context.supabase, context.userId, {
+      level: data.level,
+      background_url: data.background_url || "",
+      fields: data.fields,
+    });
+  });
+
+export const getCertificateLayout = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ level: z.string() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { getCertificateLayout: getLayout } = await import("./portal.server");
+    return getLayout(context.supabase, data);
+  });
+
+export const getCertificateLayoutPublic = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => z.object({ level: z.string() }).parse(input))
+  .handler(async ({ data }) => {
+    const { getCertificateLayout: getLayout } = await import("./portal.server");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    return getLayout(supabaseAdmin, data);
+  });
+
+export const fetchDriveImageAsBase64 = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => z.object({ url: z.string() }).parse(input))
+  .handler(async ({ data }) => {
+    const { fetchDriveImage } = await import("./portal.server");
+    return fetchDriveImage(data.url);
+  });

@@ -464,3 +464,53 @@ export async function redeemPortfolioKey(code: string, key: string) {
   if (signError) throw signError;
   return { url: signed.signedUrl };
 }
+
+export async function saveCertificateLayout(client: Client, userId: string, input: { level: string; background_url: string; fields: any }) {
+  await assertAdmin(client, userId);
+  const { data, error } = await client
+    .from("certificate_layouts")
+    .upsert(
+      {
+        level: input.level,
+        background_url: input.background_url || null,
+        fields: input.fields,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "level" }
+    )
+    .select("id")
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function getCertificateLayout(client: Client, input: { level: string }) {
+  const { data, error } = await client
+    .from("certificate_layouts")
+    .select("id, level, background_url, fields")
+    .eq("level", input.level)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+export async function fetchDriveImage(url: string) {
+  let downloadUrl = url;
+  if (url.includes('drive.google.com/file/d/')) {
+    const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+    if (match && match[1]) {
+      downloadUrl = `https://drive.google.com/uc?export=view&id=${match[1]}`;
+    }
+  }
+  
+  try {
+    const response = await fetch(downloadUrl);
+    if (!response.ok) throw new Error("Failed to fetch image");
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    const contentType = response.headers.get("content-type") || "image/jpeg";
+    return { base64: `data:${contentType};base64,${buffer.toString("base64")}` };
+  } catch (err) {
+    throw new Error("Could not fetch the Google Drive image.");
+  }
+}
