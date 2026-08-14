@@ -236,7 +236,12 @@ export function AdminWorkspace({ data, refresh }: { data: Overview; refresh: () 
         </Panel>
       </TabsContent>
 
+      <TabsContent value="subjects">
+        <SubjectCatalogue data={data} refresh={refresh} />
+      </TabsContent>
+
       <TabsContent value="accounts">
+
         <Panel title="Create DMS account" description="Temporary password with a mandatory change at first sign-in." icon={UserPlus}>
           <form
             className="grid gap-4 sm:grid-cols-2"
