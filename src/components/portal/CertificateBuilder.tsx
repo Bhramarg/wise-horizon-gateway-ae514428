@@ -401,6 +401,7 @@ function TemplateEditorView({ template, onBack }: { template: { id: string, vers
                 <span className="text-sm font-bold text-foreground">{template?.id}</span>
                 <span className="text-xs text-muted-foreground mt-1">Editing Draft Version</span>
               </div>
+              <div>
                 <label className="text-xs font-medium mb-1 block">Background Image</label>
                 <div className="flex flex-col gap-2">
                   <Input

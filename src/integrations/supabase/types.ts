@@ -119,6 +119,130 @@ export type Database = {
         }
         Relationships: []
       }
+      certificate_templates: {
+        Row: {
+          id: string
+          name: string
+          type: string
+          level: string | null
+          status: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          type: string
+          level?: string | null
+          status?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          type?: string
+          level?: string | null
+          status?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      certificate_template_versions: {
+        Row: {
+          id: string
+          template_id: string
+          version: number
+          html: string | null
+          css: string | null
+          background_asset: string | null
+          paper_size: string | null
+          orientation: string | null
+          metadata: Json | null
+          created_at: string
+          published_at: string | null
+          created_by: string | null
+        }
+        Insert: {
+          id?: string
+          template_id: string
+          version: number
+          html?: string | null
+          css?: string | null
+          background_asset?: string | null
+          paper_size?: string | null
+          orientation?: string | null
+          metadata?: Json | null
+          created_at?: string
+          published_at?: string | null
+          created_by?: string | null
+        }
+        Update: {
+          id?: string
+          template_id?: string
+          version?: number
+          html?: string | null
+          css?: string | null
+          background_asset?: string | null
+          paper_size?: string | null
+          orientation?: string | null
+          metadata?: Json | null
+          created_at?: string
+          published_at?: string | null
+          created_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "certificate_template_versions_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "certificate_templates"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      issued_certificates: {
+        Row: {
+          id: string
+          result_id: string | null
+          template_version_id: string | null
+          verification_code: string | null
+          pdf_path: string | null
+          pdf_hash: string | null
+          generated_at: string
+          issued_at: string | null
+        }
+        Insert: {
+          id?: string
+          result_id?: string | null
+          template_version_id?: string | null
+          verification_code?: string | null
+          pdf_path?: string | null
+          pdf_hash?: string | null
+          generated_at?: string
+          issued_at?: string | null
+        }
+        Update: {
+          id?: string
+          result_id?: string | null
+          template_version_id?: string | null
+          verification_code?: string | null
+          pdf_path?: string | null
+          pdf_hash?: string | null
+          generated_at?: string
+          issued_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "issued_certificates_template_version_id_fkey"
+            columns: ["template_version_id"]
+            isOneToOne: false
+            referencedRelation: "certificate_template_versions"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       institution_members: {
         Row: {
           active: boolean
