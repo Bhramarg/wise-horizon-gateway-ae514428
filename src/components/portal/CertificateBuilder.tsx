@@ -306,7 +306,7 @@ export function CertificateBuilder() {
                 <div className="mb-4">
                   <p className="text-xs font-semibold mb-2">Available Placeholders</p>
                   <div className="flex flex-wrap gap-2 mb-4">
-                    {["{{ learner_name }}", "{{ student_number }}", "{{ programme }}", "{{ date_of_birth }}", "{{ gender }}", "{{ caste }}", "{{ address }}", "{{ father_name }}", "{{ mother_name }}", "{{ qualification }}", "{{ academic_period }}", "{{ institution }}", "{{ total_marks }}", "{{ obtained_marks }}", "{{ percentage }}", "{{ grade }}", "{{ issued_date }}", "{{ verification_code }}"].map(p => (
+                    {["{{ learner_name }}", "{{ student_number }}", "{{ programme }}", "{{ date_of_birth }}", "{{ gender }}", "{{ caste }}", "{{ address }}", "{{ country }}", "{{ father_name }}", "{{ mother_name }}", "{{ qualification }}", "{{ academic_period }}", "{{ institution }}", "{{ total_marks }}", "{{ obtained_marks }}", "{{ percentage }}", "{{ grade }}", "{{ issued_date }}", "{{ verification_code }}", "{{ qr_code }}", "{{ birthmark }}", "{{ face_id_number }}"].map(p => (
                       <span 
                         key={p} 
                         onClick={() => addField(p)}

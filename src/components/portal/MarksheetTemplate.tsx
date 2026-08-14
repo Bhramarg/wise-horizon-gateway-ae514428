@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import QRCode from "qrcode";
 import "./MarksheetTemplate.css";
 
 export interface MarksheetTemplateProps {
@@ -24,7 +25,20 @@ export const MarksheetTemplate = React.forwardRef<HTMLDivElement, MarksheetTempl
       marks,
       total,
       grade,
+      birthmark,
+      face_id_number,
+      country,
     } = data;
+
+    const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
+    
+    useEffect(() => {
+      if (verificationCode) {
+        QRCode.toDataURL(`https://wise.weqsc.org/verify/${verificationCode}`)
+          .then(url => setQrCodeUrl(url))
+          .catch(console.error);
+      }
+    }, [verificationCode]);
 
     const father = guardians?.find((g: any) => g.relation?.toLowerCase() === "father")?.name || "—";
     const mother = guardians?.find((g: any) => g.relation?.toLowerCase() === "mother")?.name || "—";
@@ -44,10 +58,33 @@ export const MarksheetTemplate = React.forwardRef<HTMLDivElement, MarksheetTempl
     const customHtml = layout?.fields?.customHtml || "";
     const customCss = layout?.fields?.customCss || "";
 
-    // If customHtml is provided, we replace placeholders
-    let renderedHtml = customHtml;
-    if (customHtml) {
-      const marksTableHtml = `
+    const fieldMap: Record<string, string> = {
+      "{{ learner_name }}": learner || "",
+      "{{ student_number }}": studentNumber || "",
+      "{{ programme }}": programme || "",
+      "{{ date_of_birth }}": formattedDob || "",
+      "{{ gender }}": gender || "",
+      "{{ caste }}": data.caste || "",
+      "{{ address }}": data.address || "",
+      "{{ country }}": data.metadata?.country || country || "",
+      "{{ birthmark }}": birthmark || "",
+      "{{ face_id_number }}": face_id_number || "",
+      "{{ father_name }}": father || "",
+      "{{ mother_name }}": mother || "",
+      "{{ qualification }}": qualification || "",
+      "{{ academic_period }}": academicPeriod || "",
+      "{{ institution }}": institution || "",
+      "{{ total_marks }}": String(maximumTotal),
+      "{{ obtained_marks }}": String(obtainedTotal),
+      "{{ percentage }}": percentage + "%",
+      "{{ grade }}": grade || "",
+      "{{ issued_date }}": issuedDate,
+      "{{ verification_code }}": verificationCode || ""
+    };
+
+    let marksTableHtml = "";
+    if (marks && marks.length > 0) {
+      marksTableHtml = `
 <table class="wise-marks-table" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
   <thead>
     <tr style="border-bottom: 1px solid #ccc; text-align: left;">
@@ -62,29 +99,40 @@ export const MarksheetTemplate = React.forwardRef<HTMLDivElement, MarksheetTempl
     </tr>
   </thead>
   <tbody>
-    ${(marks || []).map((m: any, i: number) => {
+    ${marks.map((m: any, i: number) => {
+      const idx = i + 1;
       const [code, ...nameParts] = m.subject.includes("·") ? m.subject.split("·") : ["", m.subject];
       const name = nameParts.join("·") || m.subject;
       const isced = code ? code.trim() : "";
       const minMarks = m.passing || Math.round(m.maxScore * 0.33); // basic fallback if no passing
       const scoreNum = Number(m.score);
-      const grade = scoreNum >= m.maxScore * 0.9 ? 'A+' : scoreNum >= m.maxScore * 0.8 ? 'A' : scoreNum >= m.maxScore * 0.7 ? 'B' : scoreNum >= m.maxScore * 0.6 ? 'C' : scoreNum >= m.maxScore * 0.5 ? 'D' : scoreNum >= minMarks ? 'E' : 'F';
-      return `
+      const subjGrade = scoreNum >= m.maxScore * 0.9 ? 'A+' : scoreNum >= m.maxScore * 0.8 ? 'A' : scoreNum >= m.maxScore * 0.7 ? 'B' : scoreNum >= m.maxScore * 0.6 ? 'C' : scoreNum >= m.maxScore * 0.5 ? 'D' : scoreNum >= minMarks ? 'E' : 'F';
+      
+      // Assign individual subject placeholders
+      fieldMap[\`{{ subject_\${idx}_name }}\`] = name.trim();
+      fieldMap[\`{{ subject_\${idx}_isced }}\`] = isced;
+      fieldMap[\`{{ subject_\${idx}_max }}\`] = String(m.maxScore);
+      fieldMap[\`{{ subject_\${idx}_min }}\`] = String(minMarks);
+      fieldMap[\`{{ subject_\${idx}_score }}\`] = String(m.score);
+      fieldMap[\`{{ subject_\${idx}_grade }}\`] = subjGrade;
+
+      return \`
       <tr style="border-bottom: 1px solid #eee;">
-        <td style="padding: 8px;">${i + 1}</td>
-        <td style="padding: 8px;">${m.category || 'General'}</td>
-        <td style="padding: 8px;">${isced}</td>
-        <td style="padding: 8px;">${name.trim()}</td>
-        <td style="padding: 8px;">${m.maxScore}</td>
-        <td style="padding: 8px;">${minMarks}</td>
-        <td style="padding: 8px;">${m.score}</td>
-        <td style="padding: 8px;">${grade}</td>
-      </tr>`;
+        <td style="padding: 8px;">\${idx}</td>
+        <td style="padding: 8px;">\${m.category || 'General'}</td>
+        <td style="padding: 8px;">\${isced}</td>
+        <td style="padding: 8px;">\${name.trim()}</td>
+        <td style="padding: 8px;">\${m.maxScore}</td>
+        <td style="padding: 8px;">\${minMarks}</td>
+        <td style="padding: 8px;">\${m.score}</td>
+        <td style="padding: 8px;">\${subjGrade}</td>
+      </tr>\`;
     }).join("")}
   </tbody>
 </table>`;
+    }
 
-      const summaryTableHtml = `
+    const summaryTableHtml = `
 <table class="wise-summary-table" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
   <thead>
     <tr style="border-bottom: 1px solid #ccc; text-align: left;">
@@ -104,27 +152,19 @@ export const MarksheetTemplate = React.forwardRef<HTMLDivElement, MarksheetTempl
   </tbody>
 </table>`;
 
+    // If customHtml is provided, we replace placeholders
+    let renderedHtml = customHtml;
+    if (customHtml) {
       renderedHtml = renderedHtml
-        .replace(/{{ ?learner_name ?}}/g, learner || "")
-        .replace(/{{ ?student_number ?}}/g, studentNumber || "")
-        .replace(/{{ ?programme ?}}/g, programme || "")
-        .replace(/{{ ?date_of_birth ?}}/g, formattedDob || "")
-        .replace(/{{ ?gender ?}}/g, gender || "")
-        .replace(/{{ ?caste ?}}/g, data.caste || "")
-        .replace(/{{ ?address ?}}/g, data.address || "")
-        .replace(/{{ ?father_name ?}}/g, father || "")
-        .replace(/{{ ?mother_name ?}}/g, mother || "")
-        .replace(/{{ ?qualification ?}}/g, qualification || "")
-        .replace(/{{ ?academic_period ?}}/g, academicPeriod || "")
-        .replace(/{{ ?institution ?}}/g, institution || "")
-        .replace(/{{ ?total_marks ?}}/g, String(maximumTotal))
-        .replace(/{{ ?obtained_marks ?}}/g, String(obtainedTotal))
-        .replace(/{{ ?percentage ?}}/g, percentage + "%")
-        .replace(/{{ ?grade ?}}/g, grade || "")
-        .replace(/{{ ?issued_date ?}}/g, issuedDate)
-        .replace(/{{ ?verification_code ?}}/g, verificationCode || "")
         .replace(/{{ ?marks_table ?}}/g, marksTableHtml)
-        .replace(/{{ ?summary_table ?}}/g, summaryTableHtml);
+        .replace(/{{ ?summary_table ?}}/g, summaryTableHtml)
+        .replace(/{{ ?qr_code ?}}/g, qrCodeUrl ? `<img src="${qrCodeUrl}" class="wise-qr-code" style="width:100px; height:100px;" alt="QR Code" />` : "");
+
+      Object.entries(fieldMap).forEach(([key, value]) => {
+        // Create regex to match the key regardless of spacing
+        const safeKey = key.replace(/([{}])/g, "\\$1").replace(/ /g, " ?");
+        renderedHtml = renderedHtml.replace(new RegExp(safeKey, "g"), value);
+      });
     }
 
     return (
@@ -260,28 +300,30 @@ export const MarksheetTemplate = React.forwardRef<HTMLDivElement, MarksheetTempl
             
             // Replace placeholders for dynamic text if it matches one
             let displayValue = f.name;
-            const fieldMap: Record<string, string> = {
-              "{{ learner_name }}": learner || "",
-              "{{ student_number }}": studentNumber || "",
-              "{{ programme }}": programme || "",
-              "{{ date_of_birth }}": formattedDob || "",
-              "{{ gender }}": gender || "",
-              "{{ caste }}": data.caste || "",
-              "{{ address }}": data.address || "",
-              "{{ father_name }}": father || "",
-              "{{ mother_name }}": mother || "",
-              "{{ qualification }}": qualification || "",
-              "{{ academic_period }}": academicPeriod || "",
-              "{{ institution }}": institution || "",
-              "{{ total_marks }}": String(maximumTotal),
-              "{{ obtained_marks }}": String(obtainedTotal),
-              "{{ percentage }}": percentage + "%",
-              "{{ grade }}": grade || "",
-              "{{ issued_date }}": issuedDate,
-              "{{ verification_code }}": verificationCode || ""
-            };
-            if (fieldMap[f.name] !== undefined) {
-              displayValue = fieldMap[f.name];
+            // Support spaced placeholders by normalizing
+            const normalizedName = f.name.replace(/ /g, "");
+            for (const key of Object.keys(fieldMap)) {
+              if (key.replace(/ /g, "") === normalizedName) {
+                displayValue = fieldMap[key];
+                break;
+              }
+            }
+
+            if (f.name === "{{ qr_code }}") {
+              return (
+                <div
+                  key={f.id}
+                  style={{
+                    position: "absolute",
+                    left,
+                    top,
+                    width: (f.widthPct * 100) + "%",
+                    zIndex: 10
+                  }}
+                >
+                  {qrCodeUrl && <img src={qrCodeUrl} style={{ width: "100px", height: "100px", maxWidth: "100%" }} alt="QR Code" />}
+                </div>
+              );
             }
 
             return (
