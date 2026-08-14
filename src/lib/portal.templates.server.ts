@@ -26,16 +26,18 @@ export async function createCertificateTemplate(client: Client, userId: string, 
   if (error) throw error;
 
   // Create initial version 1
-  const { error: vErr } = await client
+  const { data: version, error: vErr } = await client
     .from("certificate_template_versions")
     .insert({
       template_id: tmpl.id,
       version: 1,
       created_by: userId
-    });
+    })
+    .select("id")
+    .single();
   if (vErr) throw vErr;
 
-  return tmpl;
+  return { id: tmpl.id, versions: [{ id: version.id }] };
 }
 
 export async function saveTemplateVersion(client: Client, userId: string, input: { 
