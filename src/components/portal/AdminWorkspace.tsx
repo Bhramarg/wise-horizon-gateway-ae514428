@@ -63,10 +63,14 @@ export function AdminWorkspace({ data, refresh }: { data: Overview; refresh: () 
         <TabsTrigger value="institutions" className="gap-2 rounded-lg px-4 py-2 text-xs">
           <Building2 className="size-4" /> Institutions
         </TabsTrigger>
+        <TabsTrigger value="subjects" className="gap-2 rounded-lg px-4 py-2 text-xs">
+          <BookOpen className="size-4" /> Subjects
+        </TabsTrigger>
         <TabsTrigger value="accounts" className="gap-2 rounded-lg px-4 py-2 text-xs">
           <UserPlus className="size-4" /> Accounts
         </TabsTrigger>
       </TabsList>
+
 
       {message ? <Surface className="p-4 text-sm text-muted-foreground">{message}</Surface> : null}
 
