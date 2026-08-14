@@ -93,6 +93,24 @@ export function DmsWorkspace({ data, refresh }: { data: Overview; refresh: () =>
   const pending = data.results.filter((item) => item.status === "submitted").length;
   const deleteDraftFn = useServerFn(deleteDraftResult);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
+
+  const filteredResults = data.results.filter(result => {
+    const studentName = result.students?.full_name || "";
+    const studentNumber = result.students?.student_number || "";
+    const meta = result.students?.metadata as any;
+    const rollNumber = meta?.roll_number || "";
+    
+    const matchesSearch = 
+      studentName.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      studentNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      rollNumber.toLowerCase().includes(searchQuery.toLowerCase());
+      
+    const matchesStatus = filterStatus === "all" || result.status === filterStatus;
+    
+    return matchesSearch && matchesStatus;
+  });
 
   return (
     <Tabs value={tab} onValueChange={setTab} className="mt-6 gap-6">
@@ -158,14 +176,40 @@ export function DmsWorkspace({ data, refresh }: { data: Overview; refresh: () =>
 
       <TabsContent value="submissions">
         <Panel title="Submission status" description="Every marksheet and its evaluation state." icon={ListChecks}>
-          {data.results.length ? (
+          <div className="flex gap-3 mb-4 flex-col sm:flex-row">
+            <Input 
+              placeholder="Search by name, hall ticket or roll number..." 
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="max-w-xs"
+            />
+            <select 
+              value={filterStatus}
+              onChange={e => setFilterStatus(e.target.value)}
+              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+            >
+              <option value="all">All statuses</option>
+              <option value="draft">Draft</option>
+              <option value="submitted">Submitted</option>
+              <option value="issued">Issued / Approved</option>
+              <option value="review_required">Review Required</option>
+              <option value="on_hold">On Hold</option>
+            </select>
+          </div>
+          {filteredResults.length ? (
             <div className="divide-y divide-border/60">
-              {data.results.map((result) => (
+              {filteredResults.map((result) => {
+                const meta = result.students?.metadata as any;
+                const rollNumber = meta?.roll_number;
+                const country = meta?.country || "No country";
+                
+                return (
                 <div key={result.id} className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">{result.students?.full_name}</p>
                     <p className="truncate text-xs text-muted-foreground">
-                      {result.qualification} · {result.verification_code}
+                      {rollNumber ? `Roll: ${rollNumber} · ` : ""}
+                      Hall ticket: {result.students?.student_number} · {country} · Total: {result.total ?? 0}%
                       {result.review_note ? ` · ${result.review_note}` : ""}
                     </p>
                   </div>
@@ -202,10 +246,10 @@ export function DmsWorkspace({ data, refresh }: { data: Overview; refresh: () =>
                     )}
                   </div>
                 </div>
-              ))}
+              )})}
             </div>
           ) : (
-            <Empty text="Nothing submitted yet." />
+            <Empty text="No matching submissions found." />
           )}
         </Panel>
       </TabsContent>
@@ -396,6 +440,7 @@ function SubmissionWizard({
                       birthmark: String(form.get("birthmark") ?? "") || undefined,
                       faceIdNumber: String(form.get("faceIdNumber") ?? "") || undefined,
                       address: String(form.get("address") ?? "") || undefined,
+                      country: String(form.get("country") ?? "") || undefined,
                       gender: String(form.get("gender") ?? "") || undefined,
                       guardians: guardians.filter((item) => item.name.trim()),
                       photoPath,
@@ -413,14 +458,17 @@ function SubmissionWizard({
                 <Field label="Full legal name">
                   <Input name="fullName" required placeholder="Anaya Sharma" defaultValue={draftStudent?.full_name} />
                 </Field>
-                <Field label="Student number">
-                  <Input name="studentNumber" required placeholder="WISE-2026-001" defaultValue={draftStudent?.student_number} />
+                <Field label="Examination hall ticket number" hint="Format: A0B0C0-123">
+                  <Input name="studentNumber" required placeholder="A0A0A0-000" pattern="[A-Za-z]0[A-Za-z]0[A-Za-z]0-\d{3}" defaultValue={draftStudent?.student_number} title="Must be in format A0A0A0-000" />
                 </Field>
                 <Field label="Programme">
                   <Input name="programme" required placeholder="Secondary Diploma" defaultValue={draftStudent?.programme} />
                 </Field>
                 <Field label="Date of birth">
                   <Input name="dateOfBirth" type="date" defaultValue={draftStudent?.date_of_birth ?? ""} />
+                </Field>
+                <Field label="Country">
+                  <Input name="country" placeholder="Switzerland" defaultValue={draftStudent?.metadata?.country ?? ""} />
                 </Field>
                 <Field label="Caste / category">
                   <Input name="caste" defaultValue={draftStudent?.caste ?? ""} />

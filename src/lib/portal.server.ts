@@ -48,7 +48,7 @@ export async function getPortalOverviewForUser(client: Client, userId: string, e
     client
       .from("results")
       .select(
-        "id, institution_id, student_id, qualification, academic_period, marks, total, grade, status, verification_code, review_note, portfolio_path, portfolio_key_hash, submitted_at, issued_at, created_at, students(full_name, student_number)",
+        "id, institution_id, student_id, qualification, academic_period, marks, total, grade, status, verification_code, review_note, portfolio_path, portfolio_key_hash, submitted_at, issued_at, created_at, students(full_name, student_number, date_of_birth, caste, face_id_number, address, guardians, photo_path, prev_school_doc_path, metadata)",
       )
       .order("created_at", { ascending: false })
       .limit(200),
@@ -173,6 +173,7 @@ export type StudentInput = {
   programme: string;
   dateOfBirth?: string | undefined;
   gender?: string | undefined;
+  country?: string | undefined;
   caste?: string | undefined;
   birthmark?: string | undefined;
   faceIdNumber?: string | undefined;
@@ -196,7 +197,7 @@ export async function addStudent(client: Client, userId: string, input: StudentI
     face_id_number: input.faceIdNumber || null,
     address: input.address || null,
     guardians: input.guardians as unknown as Json,
-    metadata: { gender: input.gender || null } as Json,
+    metadata: { gender: input.gender || null, country: input.country || null } as Json,
     photo_path: input.photoPath || null,
     prev_school_doc_path: input.prevSchoolDocPath || null,
   };
@@ -392,8 +393,22 @@ export async function setResultStatus(
     patch.revoked_at = now;
     patch.revocation_reason = input.note ?? "Revoked by WISE";
   }
-  const { data, error } = await client.from("results").update(patch).eq("id", input.resultId).select("id, status").single();
+  const { data, error } = await client.from("results").update(patch).eq("id", input.resultId).select("id, status, student_id").single();
   if (error) throw error;
+
+  if (input.status === "issued") {
+    const { data: st } = await client.from("students").select("metadata").eq("id", data.student_id).single();
+    const meta = (st?.metadata as any) || {};
+    if (!meta.roll_number) {
+      const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      const digits = "0123456789";
+      const roll = Array.from({length: 3}, () => letters[Math.floor(Math.random() * letters.length)]).join("") + 
+                   Array.from({length: 3}, () => digits[Math.floor(Math.random() * digits.length)]).join("");
+      meta.roll_number = roll;
+      await client.from("students").update({ metadata: meta }).eq("id", data.student_id);
+    }
+  }
+
   return data;
 }
 

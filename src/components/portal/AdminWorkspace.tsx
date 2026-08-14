@@ -21,6 +21,7 @@ import { createDmsUser, createInstitution, deleteResult, updateResultStatus } fr
 import { Empty, Field, Metric, Panel, StatusChip, Surface, type Overview } from "@/components/portal/shell";
 import { SubjectCatalogue } from "@/components/portal/SubjectCatalogue";
 import { CertificateBuilder } from "@/components/portal/CertificateBuilder";
+import { getSignedFile } from "@/lib/portal.functions";
 
 import { errorMessage } from "@/lib/utils";
 
@@ -36,11 +37,32 @@ export function AdminWorkspace({ data, refresh }: { data: Overview; refresh: () 
   const dmsFn = useServerFn(createDmsUser);
   const statusFn = useServerFn(updateResultStatus);
   const deleteFn = useServerFn(deleteResult);
+  const signedUrlFn = useServerFn(getSignedFile);
   const [message, setMessage] = useState("");
   const [note, setNote] = useState<Record<string, string>>({});
+  const [searchQuery, setSearchQuery] = useState("");
 
   const queue = data.results.filter((item) => ["submitted", "on_hold", "review_required"].includes(item.status));
-  const issued = data.results.filter((item) => item.status === "issued");
+  
+  const issued = data.results.filter((item) => {
+    if (item.status !== "issued") return false;
+    const studentName = item.students?.full_name || "";
+    const studentNumber = item.students?.student_number || "";
+    const meta = item.students?.metadata as any;
+    const rollNumber = meta?.roll_number || "";
+    return studentName.toLowerCase().includes(searchQuery.toLowerCase()) || 
+           studentNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+           rollNumber.toLowerCase().includes(searchQuery.toLowerCase());
+  });
+
+  async function openSignedFile(bucket: "student-files" | "portfolios", path: string) {
+    try {
+      const res = await signedUrlFn({ data: { bucket, path } });
+      window.open(res.url, "_blank");
+    } catch (e) {
+      setMessage(errorMessage(e, "Could not open file."));
+    }
+  }
 
   async function run(action: () => Promise<unknown>, success: string) {
     try {
@@ -114,17 +136,61 @@ export function AdminWorkspace({ data, refresh }: { data: Overview; refresh: () 
         <Panel title="Evaluation queue" description="Approve, hold, request review, revoke or delete a dossier." icon={ShieldCheck}>
           {queue.length ? (
             <div className="divide-y divide-border/60">
-              {queue.map((result) => (
-                <div key={result.id} className="space-y-3 py-5">
+              {queue.map((result) => {
+                const s = result.students as any;
+                const meta = s?.metadata || {};
+                const guardians = s?.guardians || [];
+                return (
+                <div key={result.id} className="space-y-4 py-6">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                      <p className="font-medium">{result.students?.full_name}</p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="font-medium text-lg">{s?.full_name}</p>
+                      <p className="text-sm text-muted-foreground">
                         {result.qualification} · {result.academic_period} · {result.total ?? 0}% · {result.grade ?? "Ungraded"}
                       </p>
                     </div>
                     <StatusChip status={result.status} />
                   </div>
+                  
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm bg-muted/30 p-4 rounded-lg">
+                    <div><span className="text-muted-foreground block text-xs">Hall Ticket</span>{s?.student_number}</div>
+                    <div><span className="text-muted-foreground block text-xs">DOB</span>{s?.date_of_birth || "—"}</div>
+                    <div><span className="text-muted-foreground block text-xs">Country</span>{meta.country || "—"}</div>
+                    <div><span className="text-muted-foreground block text-xs">Address</span>{s?.address || "—"}</div>
+                    <div><span className="text-muted-foreground block text-xs">Gender</span>{meta.gender || "—"}</div>
+                    <div><span className="text-muted-foreground block text-xs">Caste</span>{s?.caste || "—"}</div>
+                    <div><span className="text-muted-foreground block text-xs">Face ID</span>{s?.face_id_number || "—"}</div>
+                  </div>
+
+                  {guardians.length > 0 && (
+                    <div className="text-sm bg-muted/30 p-4 rounded-lg">
+                      <span className="text-muted-foreground block text-xs mb-2">Guardians</span>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {guardians.map((g: any, i: number) => (
+                          <div key={i}>{g.relation}: {g.name} {g.contact ? `(${g.contact})` : ''}</div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex flex-wrap gap-2 pt-2">
+                    {s?.photo_path && (
+                      <Button size="sm" variant="outline" onClick={() => openSignedFile("student-files", s.photo_path)}>
+                        View Photo
+                      </Button>
+                    )}
+                    {s?.prev_school_doc_path && (
+                      <Button size="sm" variant="outline" onClick={() => openSignedFile("student-files", s.prev_school_doc_path)}>
+                        View Previous Doc
+                      </Button>
+                    )}
+                    {result.portfolio_path && (
+                      <Button size="sm" variant="outline" onClick={() => openSignedFile("portfolios", result.portfolio_path)}>
+                        View Portfolio
+                      </Button>
+                    )}
+                  </div>
+
                   <Input
                     placeholder="Decision note (optional)"
                     value={note[result.id] ?? ""}
@@ -158,7 +224,7 @@ export function AdminWorkspace({ data, refresh }: { data: Overview; refresh: () 
                     </Button>
                   </div>
                 </div>
-              ))}
+              )})}
             </div>
           ) : (
             <Empty text="Nothing is waiting for an evaluation decision." />
@@ -168,13 +234,29 @@ export function AdminWorkspace({ data, refresh }: { data: Overview; refresh: () 
 
       <TabsContent value="registry">
         <Panel title="Issued registry" description="Approved awards with active public verification." icon={Award}>
+          <div className="mb-4">
+            <Input 
+              placeholder="Search by name, hall ticket or roll number..." 
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="max-w-xs"
+            />
+          </div>
           {issued.length ? (
             <div className="divide-y divide-border/60">
-              {issued.map((result) => (
+              {issued.map((result) => {
+                const meta = result.students?.metadata as any;
+                const rollNumber = meta?.roll_number;
+                const country = meta?.country || "No country";
+
+                return (
                 <div key={result.id} className="flex flex-wrap items-center justify-between gap-3 py-4">
-                  <div>
+                  <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium">{result.students?.full_name}</p>
-                    <p className="text-xs text-muted-foreground">{result.verification_code}</p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {rollNumber ? `Roll: ${rollNumber} · ` : ""}
+                      Hall ticket: {result.students?.student_number} · {country} · Total: {result.total ?? 0}%
+                    </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <StatusChip status={result.status} />
@@ -192,10 +274,10 @@ export function AdminWorkspace({ data, refresh }: { data: Overview; refresh: () 
                     </Button>
                   </div>
                 </div>
-              ))}
+              )})}
             </div>
           ) : (
-            <Empty text="No awards issued yet." />
+            <Empty text="No matching awards found." />
           )}
         </Panel>
       </TabsContent>
