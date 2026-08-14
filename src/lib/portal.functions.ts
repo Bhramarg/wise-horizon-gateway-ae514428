@@ -276,6 +276,73 @@ export const getCertificateLayout = createServerFn({ method: "POST" })
     return getLayout(context.supabase, data);
   });
 
+// --- NEW PHASE 7 TEMPLATE CRUD ---
+export const listCertificateTemplates = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { listCertificateTemplates: list } = await import("./portal.templates.server");
+    return list(context.supabase);
+  });
+
+export const createCertificateTemplate = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => 
+    z.object({ name: z.string(), type: z.string(), level: z.string() }).parse(input)
+  )
+  .handler(async ({ data, context }) => {
+    const { createCertificateTemplate: create } = await import("./portal.templates.server");
+    return create(context.supabase, context.userId, data);
+  });
+
+export const saveTemplateVersion = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => 
+    z.object({ version_id: z.string().uuid(), html: z.string(), css: z.string(), background_asset: z.string(), metadata: z.any() }).parse(input)
+  )
+  .handler(async ({ data, context }) => {
+    const { saveTemplateVersion: save } = await import("./portal.templates.server");
+    return save(context.supabase, context.userId, data);
+  });
+
+export const getTemplateVersion = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => 
+    z.object({ version_id: z.string().uuid() }).parse(input)
+  )
+  .handler(async ({ data, context }) => {
+    const { getTemplateVersion: getVer } = await import("./portal.templates.server");
+    return getVer(context.supabase, data.version_id);
+  });
+
+export const publishTemplate = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ template_id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { publishTemplate: publish } = await import("./portal.templates.server");
+    return publish(context.supabase, data.template_id);
+  });
+
+export const generatePdfPreview = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ version_id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { buildFinalHtml } = await import("./template.server");
+    const { generateCertificatePdf } = await import("./pdf.server");
+    const { SAMPLE_STUDENT_DATA } = await import("@/components/portal/CertificateBuilder");
+
+    // Build the finalized HTML string by injecting sample data
+    const html = await buildFinalHtml(context.supabase, data.version_id, SAMPLE_STUDENT_DATA);
+
+    // Render it via Puppeteer
+    const pdfBuffer = await generateCertificatePdf(html);
+
+    // Return the base64 encoded PDF so the client can preview it without writing to the DB yet
+    return {
+      base64: pdfBuffer.toString("base64")
+    };
+  });
+
+
 export const getCertificateLayoutPublic = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ level: z.string() }).parse(input))
   .handler(async ({ data }) => {

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import QRCode from "qrcode";
+import { generatePlaceholderMap, NormalizedCertificateData } from "../../lib/certificateEngine";
 import "./MarksheetTemplate.css";
 
 export interface MarksheetTemplateProps {
@@ -58,29 +59,57 @@ export const MarksheetTemplate = React.forwardRef<HTMLDivElement, MarksheetTempl
     const customHtml = layout?.fields?.customHtml || "";
     const customCss = layout?.fields?.customCss || "";
 
-    const fieldMap: Record<string, string> = {
-      "{{ learner_name }}": learner || "",
-      "{{ student_number }}": studentNumber || "",
-      "{{ programme }}": programme || "",
-      "{{ date_of_birth }}": formattedDob || "",
-      "{{ gender }}": gender || "",
-      "{{ caste }}": data.caste || "",
-      "{{ address }}": data.address || "",
-      "{{ country }}": data.metadata?.country || country || "",
-      "{{ birthmark }}": birthmark || "",
-      "{{ face_id_number }}": face_id_number || "",
-      "{{ father_name }}": father || "",
-      "{{ mother_name }}": mother || "",
-      "{{ qualification }}": qualification || "",
-      "{{ academic_period }}": academicPeriod || "",
-      "{{ institution }}": institution || "",
-      "{{ total_marks }}": String(maximumTotal),
-      "{{ obtained_marks }}": String(obtainedTotal),
-      "{{ percentage }}": percentage + "%",
-      "{{ grade }}": grade || "",
-      "{{ issued_date }}": issuedDate,
-      "{{ verification_code }}": verificationCode || ""
+    const normalizedData: NormalizedCertificateData = {
+      candidate: {
+        learner_name: learner,
+        student_number: studentNumber,
+        date_of_birth: formattedDob,
+        gender,
+        caste: data.caste,
+        address: data.address,
+        country: data.metadata?.country || country,
+        birthmark,
+        face_id_number,
+        father_name: father,
+        mother_name: mother,
+      },
+      academic: {
+        qualification,
+        academic_period: academicPeriod,
+        programme,
+        institution,
+      },
+      result: {
+        total_marks: String(maximumTotal),
+        obtained_marks: String(obtainedTotal),
+        percentage: percentage,
+        grade,
+      },
+      subjects: marks?.map((m: any) => {
+        const [code, ...nameParts] = m.subject.includes("·") ? m.subject.split("·") : ["", m.subject];
+        const name = nameParts.join("·") || m.subject;
+        const isced = code ? code.trim() : "";
+        const minMarks = m.passing || Math.round(m.maxScore * 0.33);
+        const scoreNum = Number(m.score);
+        const subjGrade = scoreNum >= m.maxScore * 0.9 ? 'A+' : scoreNum >= m.maxScore * 0.8 ? 'A' : scoreNum >= m.maxScore * 0.7 ? 'B' : scoreNum >= m.maxScore * 0.6 ? 'C' : scoreNum >= m.maxScore * 0.5 ? 'D' : scoreNum >= minMarks ? 'E' : 'F';
+        return {
+          name: name.trim(),
+          score: String(m.score),
+          grade: subjGrade,
+          min: String(minMarks),
+          max: String(m.maxScore),
+          isced,
+          category: m.category || 'General',
+        };
+      }) || [],
+      verification: {
+        verification_code: verificationCode,
+        issued_date: issuedDate,
+        qr_code_url: qrCodeUrl
+      }
     };
+
+    const fieldMap = generatePlaceholderMap(normalizedData);
 
     let marksTableHtml = "";
     if (marks && marks.length > 0) {
@@ -108,25 +137,17 @@ export const MarksheetTemplate = React.forwardRef<HTMLDivElement, MarksheetTempl
       const scoreNum = Number(m.score);
       const subjGrade = scoreNum >= m.maxScore * 0.9 ? 'A+' : scoreNum >= m.maxScore * 0.8 ? 'A' : scoreNum >= m.maxScore * 0.7 ? 'B' : scoreNum >= m.maxScore * 0.6 ? 'C' : scoreNum >= m.maxScore * 0.5 ? 'D' : scoreNum >= minMarks ? 'E' : 'F';
       
-      // Assign individual subject placeholders
-      fieldMap[\`{{ subject_\${idx}_name }}\`] = name.trim();
-      fieldMap[\`{{ subject_\${idx}_isced }}\`] = isced;
-      fieldMap[\`{{ subject_\${idx}_max }}\`] = String(m.maxScore);
-      fieldMap[\`{{ subject_\${idx}_min }}\`] = String(minMarks);
-      fieldMap[\`{{ subject_\${idx}_score }}\`] = String(m.score);
-      fieldMap[\`{{ subject_\${idx}_grade }}\`] = subjGrade;
-
-      return \`
+      return `
       <tr style="border-bottom: 1px solid #eee;">
-        <td style="padding: 8px;">\${idx}</td>
-        <td style="padding: 8px;">\${m.category || 'General'}</td>
-        <td style="padding: 8px;">\${isced}</td>
-        <td style="padding: 8px;">\${name.trim()}</td>
-        <td style="padding: 8px;">\${m.maxScore}</td>
-        <td style="padding: 8px;">\${minMarks}</td>
-        <td style="padding: 8px;">\${m.score}</td>
-        <td style="padding: 8px;">\${subjGrade}</td>
-      </tr>\`;
+        <td style="padding: 8px;">${idx}</td>
+        <td style="padding: 8px;">${m.category || 'General'}</td>
+        <td style="padding: 8px;">${isced}</td>
+        <td style="padding: 8px;">${name.trim()}</td>
+        <td style="padding: 8px;">${m.maxScore}</td>
+        <td style="padding: 8px;">${minMarks}</td>
+        <td style="padding: 8px;">${m.score}</td>
+        <td style="padding: 8px;">${subjGrade}</td>
+      </tr>`;
     }).join("")}
   </tbody>
 </table>`;
@@ -173,8 +194,13 @@ export const MarksheetTemplate = React.forwardRef<HTMLDivElement, MarksheetTempl
           ref={ref} 
           className="marksheet" 
           style={{ 
-            backgroundImage: `url(${backgroundUrl})`,
-            position: "relative"
+            backgroundImage: backgroundUrl ? `url(${backgroundUrl})` : 'none',
+            backgroundSize: '100% 100%',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+            position: "relative",
+            width: "min(100vw, 1404px)",
+            aspectRatio: "1404 / 2047"
           }}
         >
           {customCss && <style dangerouslySetInnerHTML={{ __html: customCss }} />}

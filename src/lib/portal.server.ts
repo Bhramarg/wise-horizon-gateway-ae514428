@@ -407,6 +407,17 @@ export async function setResultStatus(
       meta.roll_number = roll;
       await client.from("students").update({ metadata: meta }).eq("id", data.student_id);
     }
+    
+    // Trigger Phase 9 & 10: Official PDF Engine
+    const { issueCertificatePipeline } = await import("./pdf.pipeline.server");
+    try {
+      // For MVP we await this synchronously. For bulk, this could be dispatched to a queue.
+      await issueCertificatePipeline(client, input.resultId);
+    } catch (e) {
+      console.error("Failed to execute official PDF pipeline during issuance:", e);
+      // NOTE: We do not fail the transaction here to avoid breaking Lovable's existing flow,
+      // but in strict production this should abort the status change or go to a dead-letter queue.
+    }
   }
 
   return data;

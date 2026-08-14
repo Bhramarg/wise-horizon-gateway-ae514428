@@ -2,11 +2,12 @@ import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Panel, Surface } from "@/components/portal/shell";
-import { saveCertificateLayout, getCertificateLayout, getSignedFile } from "@/lib/portal.functions";
+import { saveCertificateLayout, getCertificateLayout, getSignedFile, listCertificateTemplates, createCertificateTemplate, saveTemplateVersion, publishTemplate, getTemplateVersion, generatePdfPreview } from "@/lib/portal.functions";
 import { useServerFn } from "@tanstack/react-start";
-import { Save, Plus, Trash2, FileImage, Upload, Loader2 } from "lucide-react";
+import { Save, Plus, Trash2, FileImage, Upload, Loader2, FileDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { errorMessage } from "@/lib/utils";
+import { validateTemplateHtml, generatePlaceholderMap, NormalizedCertificateData, VALID_PLACEHOLDERS } from "@/lib/certificateEngine";
 
 export interface CertificateField {
   id: string;
@@ -53,6 +54,52 @@ const DOC_TYPES = [
   { id: "certificate", name: "Certificate" }
 ];
 
+export const SAMPLE_STUDENT_DATA: NormalizedCertificateData = {
+  candidate: {
+    learner_name: "John Doe",
+    student_number: "WSE-849302-26",
+    date_of_birth: "14 - 08 - 2005",
+    gender: "Male",
+    caste: "General",
+    address: "123 Sample Avenue, Sample City",
+    country: "United States",
+    birthmark: "Mole on left cheek",
+    face_id_number: "FACE-90210",
+    father_name: "Richard Doe",
+    mother_name: "Jane Doe",
+  },
+  academic: {
+    qualification: "L2",
+    academic_period: "2025-2026",
+    programme: "Secondary Education Diploma",
+    institution: "World Education Quality Standards Academy",
+  },
+  result: {
+    total_marks: "1100",
+    obtained_marks: "945",
+    percentage: "85.91%",
+    grade: "A",
+  },
+  subjects: [
+    { name: "English Language", score: "88", grade: "A", min: "33", max: "100", isced: "0232", category: "General" },
+    { name: "Mathematics", score: "92", grade: "A+", min: "33", max: "100", isced: "0541", category: "General" },
+    { name: "Science", score: "85", grade: "A", min: "33", max: "100", isced: "0532", category: "General" },
+    { name: "History", score: "78", grade: "B", min: "33", max: "100", isced: "0222", category: "General" },
+    { name: "Geography", score: "81", grade: "A", min: "33", max: "100", isced: "0314", category: "General" },
+    { name: "Physical Education", score: "95", grade: "A+", min: "33", max: "100", isced: "1014", category: "General" },
+    { name: "Computer Science", score: "89", grade: "A", min: "33", max: "100", isced: "0611", category: "General" },
+    { name: "Art & Design", score: "76", grade: "B", min: "33", max: "100", isced: "0211", category: "General" },
+    { name: "Music", score: "84", grade: "A", min: "33", max: "100", isced: "0215", category: "General" },
+    { name: "Economics", score: "87", grade: "A", min: "33", max: "100", isced: "0311", category: "General" },
+    { name: "Foreign Language", score: "90", grade: "A+", min: "33", max: "100", isced: "0231", category: "General" },
+  ],
+  verification: {
+    verification_code: "VRF-789-456",
+    issued_date: "15 - 08 - 2026",
+    qr_code_url: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ3aGl0ZSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LXNpemU9IjEyIj5RUiBDb2RlPC90ZXh0Pjwvc3ZnPg==", // Simple dummy QR
+  }
+};
+
 async function uploadTo(bucket: "student-files" | "portfolios", folder: string, file: File) {
   const path = `${folder}/${crypto.randomUUID()}-${file.name.replace(/[^\w.\-]/g, "_")}`;
   const { error } = await supabase.storage.from(bucket).upload(path, file, { upsert: false });
@@ -61,10 +108,81 @@ async function uploadTo(bucket: "student-files" | "portfolios", folder: string, 
 }
 
 export function CertificateBuilder() {
-  const [level, setLevel] = useState("L2");
-  const [docType, setDocType] = useState("marksheet");
-  const layoutKey = `${level}-${docType}`;
+  const [view, setView] = useState<"list" | "edit">("list");
+  const [activeTemplate, setActiveTemplate] = useState<{ id: string, version_id: string } | null>(null);
+
+  if (view === "list") {
+    return <TemplateList onEdit={(t) => { setActiveTemplate(t); setView("edit"); }} />;
+  }
+
+  return <TemplateEditorView template={activeTemplate} onBack={() => setView("list")} />;
+}
+
+function TemplateList({ onEdit }: { onEdit: (t: { id: string, version_id: string }) => void }) {
+  const [templates, setTemplates] = useState<any[]>([]);
+  const listFn = useServerFn(listCertificateTemplates);
+  const createFn = useServerFn(createCertificateTemplate);
   
+  useEffect(() => {
+    listFn().then(setTemplates).catch(console.error);
+  }, [listFn]);
+
+  async function handleCreate() {
+    try {
+      const tmpl = await createFn({ data: { name: "New Template", type: "Marksheet", level: "L2" } });
+      const versions = tmpl.versions || [{ id: "temp" }];
+      onEdit({ id: tmpl.id, version_id: versions[0]?.id });
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-bold tracking-tight">Certificate Templates</h2>
+        <Button onClick={handleCreate}><Plus className="w-4 h-4 mr-2" /> New Template</Button>
+      </div>
+      <Surface className="p-4">
+        <table className="w-full text-left text-sm">
+          <thead>
+            <tr className="border-b">
+              <th className="pb-2">Name</th>
+              <th className="pb-2">Type</th>
+              <th className="pb-2">Level</th>
+              <th className="pb-2">Status</th>
+              <th className="pb-2">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {templates.map(t => (
+              <tr key={t.id} className="border-b last:border-0">
+                <td className="py-3 font-medium">{t.name}</td>
+                <td className="py-3">{t.type}</td>
+                <td className="py-3">{t.level}</td>
+                <td className="py-3">
+                  <span className={`px-2 py-1 rounded text-xs ${t.status === 'PUBLISHED' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                    {t.status}
+                  </span>
+                </td>
+                <td className="py-3">
+                  <Button variant="outline" size="sm" onClick={() => onEdit({ id: t.id, version_id: t.versions?.[0]?.id })}>
+                    Edit
+                  </Button>
+                </td>
+              </tr>
+            ))}
+            {templates.length === 0 && (
+              <tr><td colSpan={5} className="py-8 text-center text-muted-foreground">No templates found.</td></tr>
+            )}
+          </tbody>
+        </table>
+      </Surface>
+    </div>
+  );
+}
+
+function TemplateEditorView({ template, onBack }: { template: { id: string, version_id: string } | null, onBack: () => void }) {
   const [backgroundUrl, setBackgroundUrl] = useState("");
   const [previewUrl, setPreviewUrl] = useState("");
   const [fields, setFields] = useState<CertificateField[]>([]);
@@ -78,38 +196,37 @@ export function CertificateBuilder() {
 
   const docFrameRef = useRef<HTMLDivElement>(null);
 
-  const saveFn = useServerFn(saveCertificateLayout);
-  const getFn = useServerFn(getCertificateLayout);
+  const saveFn = useServerFn(saveTemplateVersion);
+  const getFn = useServerFn(getTemplateVersion);
+  const publishFn = useServerFn(publishTemplate);
+  const previewPdfFn = useServerFn(generatePdfPreview);
   const signedUrlFn = useServerFn(getSignedFile);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   useEffect(() => {
     async function load() {
+      if (!template?.version_id) return;
       try {
-        const layout = await getFn({ data: { level: layoutKey } });
+        const layout = await getFn({ data: { version_id: template.version_id } });
         if (layout) {
-          setBackgroundUrl(layout.background_url || "");
-          const f = layout.fields as any;
+          setBackgroundUrl(layout.background_asset || "");
+          const f = layout.metadata as any;
           if (Array.isArray(f)) {
             setFields(f);
-            setCustomHtml("");
-            setCustomCss("");
+            setCustomHtml(layout.html || "");
+            setCustomCss(layout.css || "");
           } else if (f) {
             setFields(f.elements || []);
-            setCustomHtml(f.customHtml || "");
-            setCustomCss(f.customCss || "");
+            setCustomHtml(layout.html || "");
+            setCustomCss(layout.css || "");
           }
-        } else {
-          setBackgroundUrl("");
-          setFields([]);
-          setCustomHtml("");
-          setCustomCss("");
         }
       } catch (e) {
-        console.error("Failed to load layout", e);
+        console.error("Failed to load template version", e);
       }
     }
     load();
-  }, [layoutKey, getFn]);
+  }, [template, getFn]);
 
   useEffect(() => {
     async function resolvePreview() {
@@ -120,7 +237,6 @@ export function CertificateBuilder() {
       if (backgroundUrl.startsWith("http") || backgroundUrl.startsWith("data:")) {
         setPreviewUrl(backgroundUrl);
       } else {
-        // It's a storage path
         try {
           const res = await signedUrlFn({ data: { bucket: "student-files", path: backgroundUrl } });
           setPreviewUrl(res.url);
@@ -133,18 +249,64 @@ export function CertificateBuilder() {
   }, [backgroundUrl, signedUrlFn]);
 
   async function handleSave() {
+    if (!template?.version_id) return;
     try {
       setMessage("");
+
+      if (customHtml) {
+        const errors = validateTemplateHtml(customHtml);
+        if (errors.length > 0) {
+          setMessage(`Cannot save. Invalid placeholders found: ${errors.join(", ")}`);
+          return;
+        }
+      }
+
       await saveFn({ 
         data: { 
-          level: layoutKey, 
-          background_url: backgroundUrl, 
-          fields: { elements: fields, customHtml, customCss } as any 
+          version_id: template.version_id, 
+          background_asset: backgroundUrl, 
+          html: customHtml,
+          css: customCss,
+          metadata: { elements: fields }
         } 
       });
-      setMessage(`Layout for ${level} ${docType} saved successfully.`);
+      setMessage(`Template saved successfully.`);
     } catch (e) {
-      setMessage(errorMessage(e, "Failed to save layout."));
+      setMessage(errorMessage(e, "Failed to save template."));
+    }
+  }
+
+  async function handlePublish() {
+    if (!template?.id) return;
+    try {
+      await handleSave(); // save before publish
+      await publishFn({ data: { template_id: template.id } });
+      setMessage("Template successfully published!");
+    } catch (e) {
+      setMessage(errorMessage(e, "Failed to publish template."));
+    }
+  }
+
+  async function handleGeneratePdf() {
+    if (!template?.version_id) return;
+    try {
+      setIsGeneratingPdf(true);
+      setMessage("Generating official PDF preview... please wait.");
+      await handleSave(); // Ensure latest is saved
+      const res = await previewPdfFn({ data: { version_id: template.version_id } });
+      
+      // Download or open the PDF from base64
+      const pdfUrl = `data:application/pdf;base64,${res.base64}`;
+      const link = document.createElement('a');
+      link.href = pdfUrl;
+      link.download = `preview_template_${template.id}.pdf`;
+      link.click();
+
+      setMessage("PDF Preview generated and downloaded successfully.");
+    } catch (e) {
+      setMessage(errorMessage(e, "Failed to generate PDF. Check server logs."));
+    } finally {
+      setIsGeneratingPdf(false);
     }
   }
 
@@ -224,6 +386,10 @@ export function CertificateBuilder() {
 
   return (
     <div className="space-y-6">
+      <div className="flex items-center gap-4">
+        <Button variant="ghost" onClick={onBack}>&larr; Back</Button>
+        <h2 className="text-xl font-bold tracking-tight">Editing Template</h2>
+      </div>
       {message ? <Surface className="p-4 text-sm text-muted-foreground">{message}</Surface> : null}
 
       <div className="flex flex-col md:flex-row gap-6">
@@ -231,33 +397,10 @@ export function CertificateBuilder() {
         <div className="w-full md:w-80 flex-shrink-0 space-y-6">
           <Panel title="Layout Settings" icon={FileImage}>
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs font-medium mb-1 block">Level</label>
-                  <select
-                    value={level}
-                    onChange={(e) => setLevel(e.target.value)}
-                    className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
-                  >
-                    {LEVELS.map(l => (
-                      <option key={l.id} value={l.id}>{l.id}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs font-medium mb-1 block">Document</label>
-                  <select
-                    value={docType}
-                    onChange={(e) => setDocType(e.target.value)}
-                    className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
-                  >
-                    {DOC_TYPES.map(d => (
-                      <option key={d.id} value={d.id}>{d.name}</option>
-                    ))}
-                  </select>
-                </div>
+              <div className="flex flex-col mb-4">
+                <span className="text-sm font-bold text-foreground">{template?.id}</span>
+                <span className="text-xs text-muted-foreground mt-1">Editing Draft Version</span>
               </div>
-              <div>
                 <label className="text-xs font-medium mb-1 block">Background Image</label>
                 <div className="flex flex-col gap-2">
                   <Input
@@ -279,9 +422,20 @@ export function CertificateBuilder() {
                   </div>
                 </div>
               </div>
-              <Button className="w-full" onClick={handleSave}>
-                <Save className="mr-2 h-4 w-4" /> Save Layout
-              </Button>
+              <div className="flex flex-col gap-2 w-full mt-4">
+                <div className="flex gap-2 w-full">
+                  <Button className="flex-1" variant="outline" onClick={handleSave}>
+                    <Save className="mr-2 h-4 w-4" /> Save Draft
+                  </Button>
+                  <Button className="flex-1 bg-green-600 hover:bg-green-700" onClick={handlePublish}>
+                    Publish
+                  </Button>
+                </div>
+                <Button className="w-full mt-2" variant="secondary" onClick={handleGeneratePdf} disabled={isGeneratingPdf}>
+                  {isGeneratingPdf ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileDown className="mr-2 h-4 w-4" />}
+                  Test Puppeteer PDF
+                </Button>
+              </div>
             </div>
           </Panel>
 
@@ -424,18 +578,46 @@ export function CertificateBuilder() {
             )}
             
             {customCss && <style dangerouslySetInnerHTML={{ __html: customCss }} />}
-            {customHtml && (
-              <div 
-                className="absolute inset-0 overflow-hidden" 
-                dangerouslySetInnerHTML={{ __html: customHtml }} 
-              />
-            )}
+            {(() => {
+              if (!customHtml) return null;
+              let renderedHtml = customHtml;
+              const fieldMap = generatePlaceholderMap(SAMPLE_STUDENT_DATA);
+              
+              // We don't have full marks table building logic here, but we can at least map basic text variables.
+              // For a true 1:1, we should generate marks table and summary table HTML.
+              // We will just do basic placeholder replacements.
+              const marksTableHtml = `<div style="padding: 10px; border: 1px dashed red; text-align: center; font-weight: bold; background: #ffebeb;">Marks Table Sample</div>`;
+              const summaryTableHtml = `<div style="padding: 10px; border: 1px dashed blue; text-align: center; font-weight: bold; background: #ebf0ff;">Summary Table Sample</div>`;
+              
+              renderedHtml = renderedHtml
+                .replace(/{{ ?marks_table ?}}/g, marksTableHtml)
+                .replace(/{{ ?summary_table ?}}/g, summaryTableHtml)
+                .replace(/{{ ?qr_code ?}}/g, `<img src="${SAMPLE_STUDENT_DATA.verification.qr_code_url}" style="width:100px; height:100px;" alt="QR Code" />`);
+
+              Object.entries(fieldMap).forEach(([key, value]) => {
+                const safeKey = key.replace(/([{}])/g, "\\$1").replace(/ /g, " ?");
+                renderedHtml = renderedHtml.replace(new RegExp(safeKey, "g"), value);
+              });
+
+              return (
+                <div 
+                  className="absolute inset-0 overflow-hidden" 
+                  dangerouslySetInnerHTML={{ __html: renderedHtml }} 
+                />
+              );
+            })()}
             
             {fields.map((f) => {
               const left = f.xPct * 100 + "%";
               const top = f.yPct * 100 + "%";
               // Font size scaling assumption for preview
               const fs = f.fontSize * 0.7; // scaled down for 800px preview assuming high res natural
+              
+              let displayText = f.name;
+              const fieldMap = generatePlaceholderMap(SAMPLE_STUDENT_DATA);
+              if (fieldMap[f.name] !== undefined) {
+                displayText = fieldMap[f.name] || `[Empty ${f.name}]`;
+              }
               
               return (
                 <div
@@ -466,7 +648,7 @@ export function CertificateBuilder() {
                   <div className={`absolute -top-[20px] -left-[1px] text-[10px] bg-primary text-primary-foreground px-1 py-0.5 whitespace-nowrap rounded ${selectedId === f.id ? 'block' : 'hidden'}`}>
                     {f.name}
                   </div>
-                  {f.name}
+                  {displayText}
                 </div>
               );
             })}
