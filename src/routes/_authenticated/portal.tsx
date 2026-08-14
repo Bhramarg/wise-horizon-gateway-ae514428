@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { claimFirstAdmin, getPortalOverview } from "@/lib/portal.functions";
 import { AdminWorkspace } from "@/components/portal/AdminWorkspace";
 import { DmsWorkspace } from "@/components/portal/DmsWorkspace";
-import wiseLogo from "@/assets/wise-logo.png.asset.json";
+import { PortalLayout } from "@/components/portal/PortalLayout";
 
 export const Route = createFileRoute("/_authenticated/portal")({
   head: () => ({
@@ -31,7 +31,6 @@ function Portal() {
   const queryClient = useQueryClient();
   const overviewFn = useServerFn(getPortalOverview);
   const claimFn = useServerFn(claimFirstAdmin);
-  const [dark, setDark] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -40,11 +39,6 @@ function Portal() {
       }
     });
   }, [navigate]);
-
-  useEffect(() => {
-    document.documentElement.classList.toggle("dark", dark);
-    return () => document.documentElement.classList.remove("dark");
-  }, [dark]);
 
   const { data, isLoading, error } = useQuery({ queryKey: ["portal-overview"], queryFn: () => overviewFn() });
   const refresh = () => queryClient.invalidateQueries({ queryKey: ["portal-overview"] });
@@ -57,7 +51,14 @@ function Portal() {
   }
 
   if (isLoading) return <Loading />;
-  if (error || !data) return <PortalMessage title="Portal unavailable" body="The secure workspace could not be loaded." />;
+  if (error || !data)
+    return (
+      <PortalMessage title="Portal unavailable" body="The secure workspace could not be loaded. Your session may have expired.">
+        <Button variant="outline" onClick={signOut}>
+          Sign out
+        </Button>
+      </PortalMessage>
+    );
   if (!data.role)
     return (
       <PortalMessage
@@ -79,43 +80,19 @@ function Portal() {
     );
 
   return (
-    <main className="mica-surface min-h-screen text-foreground">
-      <header className="sticky top-0 z-30 border-b border-border/60 bg-background/70 backdrop-blur-2xl">
-        <div className="mx-auto flex max-w-[1500px] items-center justify-between gap-4 px-5 py-3.5">
-          <div className="flex items-center gap-3">
-            <img src={wiseLogo.url} alt="WISE seal" width={38} height={38} className="size-9 object-contain" />
-            <div>
-              <p className="font-display text-sm font-semibold tracking-tight">WISE Operations</p>
-              <p className="text-[11px] text-muted-foreground">
-                {data.role === "admin" ? "Evaluation & governance console" : "Digital marksheet studio"}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="hidden text-xs text-muted-foreground md:inline">{data.email}</span>
-            <Button variant="ghost" size="icon" aria-label="Toggle theme" onClick={() => setDark((value) => !value)}>
-              {dark ? <Sun /> : <Moon />}
-            </Button>
-            <Button variant="outline" size="sm" onClick={signOut}>
-              <LogOut /> Sign out
-            </Button>
-          </div>
-        </div>
-      </header>
-      <div className="mx-auto max-w-[1500px] px-5 pb-16 pt-6">
-        <div>
-          <h1 className="font-display text-2xl font-semibold tracking-tight">
-            {data.role === "admin" ? "Evaluation overview" : "Certification workspace"}
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {data.role === "admin"
-              ? "Review dossiers, govern institutions and manage operator accounts."
-              : "Follow the canonical certification workflow from learner record to blockchain hand-off."}
-          </p>
-        </div>
-        {data.role === "admin" ? <AdminWorkspace data={data} refresh={refresh} /> : <DmsWorkspace data={data} refresh={refresh} />}
+    <PortalLayout data={data}>
+      <div>
+        <h1 className="font-display text-2xl font-semibold tracking-tight">
+          {data.role === "admin" ? "Evaluation overview" : "Certification workspace"}
+        </h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {data.role === "admin"
+            ? "Review dossiers, govern institutions and manage operator accounts."
+            : "Follow the canonical certification workflow from learner record to blockchain hand-off."}
+        </p>
       </div>
-    </main>
+      {data.role === "admin" ? <AdminWorkspace data={data} refresh={refresh} /> : <DmsWorkspace data={data} refresh={refresh} />}
+    </PortalLayout>
   );
 }
 

@@ -15,6 +15,12 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as MyWiseRouteImport } from './routes/my-wise'
 import { Route as AuthenticatedChangePasswordRouteImport } from './routes/_authenticated/change-password'
 import { Route as AuthenticatedPortalRouteImport } from './routes/_authenticated/portal'
+import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
+import { Route as AuthenticatedSessionsRouteImport } from './routes/_authenticated/sessions'
+import { Route as AboutChairpersonRouteImport } from './routes/about/chairperson'
+import { Route as AboutFaqRouteImport } from './routes/about/faq'
+import { Route as AboutGoverningBodyRouteImport } from './routes/about/governing-body'
+import { Route as AboutVisionRouteImport } from './routes/about/vision'
 import { Route as VerifyCodeRouteImport } from './routes/verify.$code'
 
 const IndexRoute = IndexRouteImport.update({
@@ -47,6 +53,36 @@ const AuthenticatedPortalRoute = AuthenticatedPortalRouteImport.update({
   path: '/portal',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedReportsRoute = AuthenticatedReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedSessionsRoute = AuthenticatedSessionsRouteImport.update({
+  id: '/sessions',
+  path: '/sessions',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AboutChairpersonRoute = AboutChairpersonRouteImport.update({
+  id: '/about/chairperson',
+  path: '/about/chairperson',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AboutFaqRoute = AboutFaqRouteImport.update({
+  id: '/about/faq',
+  path: '/about/faq',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AboutGoverningBodyRoute = AboutGoverningBodyRouteImport.update({
+  id: '/about/governing-body',
+  path: '/about/governing-body',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AboutVisionRoute = AboutVisionRouteImport.update({
+  id: '/about/vision',
+  path: '/about/vision',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const VerifyCodeRoute = VerifyCodeRouteImport.update({
   id: '/verify/$code',
   path: '/verify/$code',
@@ -59,6 +95,12 @@ export interface FileRoutesByFullPath {
   '/my-wise': typeof MyWiseRoute
   '/change-password': typeof AuthenticatedChangePasswordRoute
   '/portal': typeof AuthenticatedPortalRoute
+  '/reports': typeof AuthenticatedReportsRoute
+  '/sessions': typeof AuthenticatedSessionsRoute
+  '/about/chairperson': typeof AboutChairpersonRoute
+  '/about/faq': typeof AboutFaqRoute
+  '/about/governing-body': typeof AboutGoverningBodyRoute
+  '/about/vision': typeof AboutVisionRoute
   '/verify/$code': typeof VerifyCodeRoute
 }
 export interface FileRoutesByTo {
@@ -67,6 +109,12 @@ export interface FileRoutesByTo {
   '/my-wise': typeof MyWiseRoute
   '/change-password': typeof AuthenticatedChangePasswordRoute
   '/portal': typeof AuthenticatedPortalRoute
+  '/reports': typeof AuthenticatedReportsRoute
+  '/sessions': typeof AuthenticatedSessionsRoute
+  '/about/chairperson': typeof AboutChairpersonRoute
+  '/about/faq': typeof AboutFaqRoute
+  '/about/governing-body': typeof AboutGoverningBodyRoute
+  '/about/vision': typeof AboutVisionRoute
   '/verify/$code': typeof VerifyCodeRoute
 }
 export interface FileRoutesById {
@@ -77,14 +125,43 @@ export interface FileRoutesById {
   '/my-wise': typeof MyWiseRoute
   '/_authenticated/change-password': typeof AuthenticatedChangePasswordRoute
   '/_authenticated/portal': typeof AuthenticatedPortalRoute
+  '/_authenticated/reports': typeof AuthenticatedReportsRoute
+  '/_authenticated/sessions': typeof AuthenticatedSessionsRoute
+  '/about/chairperson': typeof AboutChairpersonRoute
+  '/about/faq': typeof AboutFaqRoute
+  '/about/governing-body': typeof AboutGoverningBodyRoute
+  '/about/vision': typeof AboutVisionRoute
   '/verify/$code': typeof VerifyCodeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/$' | '/my-wise' | '/change-password' | '/portal' | '/verify/$code'
+    | '/'
+    | '/$'
+    | '/my-wise'
+    | '/change-password'
+    | '/portal'
+    | '/reports'
+    | '/sessions'
+    | '/about/chairperson'
+    | '/about/faq'
+    | '/about/governing-body'
+    | '/about/vision'
+    | '/verify/$code'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/$' | '/my-wise' | '/change-password' | '/portal' | '/verify/$code'
+  to:
+    | '/'
+    | '/$'
+    | '/my-wise'
+    | '/change-password'
+    | '/portal'
+    | '/reports'
+    | '/sessions'
+    | '/about/chairperson'
+    | '/about/faq'
+    | '/about/governing-body'
+    | '/about/vision'
+    | '/verify/$code'
   id:
     | '__root__'
     | '/'
@@ -93,6 +170,12 @@ export interface FileRouteTypes {
     | '/my-wise'
     | '/_authenticated/change-password'
     | '/_authenticated/portal'
+    | '/_authenticated/reports'
+    | '/_authenticated/sessions'
+    | '/about/chairperson'
+    | '/about/faq'
+    | '/about/governing-body'
+    | '/about/vision'
     | '/verify/$code'
   fileRoutesById: FileRoutesById
 }
@@ -101,6 +184,10 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   SplatRoute: typeof SplatRoute
   MyWiseRoute: typeof MyWiseRoute
+  AboutChairpersonRoute: typeof AboutChairpersonRoute
+  AboutFaqRoute: typeof AboutFaqRoute
+  AboutGoverningBodyRoute: typeof AboutGoverningBodyRoute
+  AboutVisionRoute: typeof AboutVisionRoute
   VerifyCodeRoute: typeof VerifyCodeRoute
 }
 
@@ -148,6 +235,48 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPortalRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/reports': {
+      id: '/_authenticated/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof AuthenticatedReportsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/sessions': {
+      id: '/_authenticated/sessions'
+      path: '/sessions'
+      fullPath: '/sessions'
+      preLoaderRoute: typeof AuthenticatedSessionsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/about/chairperson': {
+      id: '/about/chairperson'
+      path: '/about/chairperson'
+      fullPath: '/about/chairperson'
+      preLoaderRoute: typeof AboutChairpersonRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/about/faq': {
+      id: '/about/faq'
+      path: '/about/faq'
+      fullPath: '/about/faq'
+      preLoaderRoute: typeof AboutFaqRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/about/governing-body': {
+      id: '/about/governing-body'
+      path: '/about/governing-body'
+      fullPath: '/about/governing-body'
+      preLoaderRoute: typeof AboutGoverningBodyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/about/vision': {
+      id: '/about/vision'
+      path: '/about/vision'
+      fullPath: '/about/vision'
+      preLoaderRoute: typeof AboutVisionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/verify/$code': {
       id: '/verify/$code'
       path: '/verify/$code'
@@ -161,11 +290,15 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedChangePasswordRoute: typeof AuthenticatedChangePasswordRoute
   AuthenticatedPortalRoute: typeof AuthenticatedPortalRoute
+  AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
+  AuthenticatedSessionsRoute: typeof AuthenticatedSessionsRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedChangePasswordRoute: AuthenticatedChangePasswordRoute,
   AuthenticatedPortalRoute: AuthenticatedPortalRoute,
+  AuthenticatedReportsRoute: AuthenticatedReportsRoute,
+  AuthenticatedSessionsRoute: AuthenticatedSessionsRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
@@ -176,6 +309,10 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   SplatRoute: SplatRoute,
   MyWiseRoute: MyWiseRoute,
+  AboutChairpersonRoute: AboutChairpersonRoute,
+  AboutFaqRoute: AboutFaqRoute,
+  AboutGoverningBodyRoute: AboutGoverningBodyRoute,
+  AboutVisionRoute: AboutVisionRoute,
   VerifyCodeRoute: VerifyCodeRoute,
 }
 export const routeTree = rootRouteImport
