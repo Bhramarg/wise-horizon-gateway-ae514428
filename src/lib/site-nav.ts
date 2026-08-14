@@ -9,36 +9,14 @@ export type NavSection = NavNode & { children: NavNode[] };
 
 export const navigation: NavSection[] = [
   {
-    slug: "about-wise",
+    slug: "about",
     label: "About WISE",
     blurb: "Mission, governance and the partnerships that anchor our mandate.",
     children: [
-      { slug: "", label: "The WEQSC-WISE Mission", blurb: "Our purpose and mandate" },
-      {
-        slug: "history-foundation",
-        label: "History & Foundation",
-        blurb: "Origins under the UNESCO umbrella",
-      },
-      {
-        slug: "governance-structure",
-        label: "Governance Structure",
-        children: [
-          { slug: "board-of-trustees", label: "Board of Trustees" },
-          { slug: "executive-committee", label: "Executive Committee" },
-          { slug: "national-committees", label: "National Committees" },
-        ],
-      },
-      {
-        slug: "strategic-partners",
-        label: "Strategic Partners",
-        children: [
-          { slug: "unesco-relations", label: "UNESCO Relations" },
-          { slug: "council-of-europe", label: "Council of Europe" },
-          { slug: "global-governmental-orgs", label: "Global Governmental Organisations" },
-          { slug: "european-union", label: "European Union" },
-        ],
-      },
-      { slug: "careers", label: "Careers", blurb: "Join the Secretariat" },
+      { slug: "vision", label: "Vision & Mission", blurb: "Our purpose and mandate" },
+      { slug: "chairperson", label: "Chairperson's Message", blurb: "Leadership Vision for Global Education" },
+      { slug: "governing-body", label: "Governing Body" },
+      { slug: "faq", label: "FAQs" },
     ],
   },
   {
