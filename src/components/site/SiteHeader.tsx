@@ -24,7 +24,7 @@ function WiseMark({ className = "" }: { className?: string }) {
         <span className="block text-[9.5px] uppercase tracking-[0.18em] text-muted-foreground">
           Weqsc International
           <br />
-          Scholastic Examination
+          Secondary Examination
         </span>
       </span>
     </span>
