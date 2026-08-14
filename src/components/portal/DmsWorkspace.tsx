@@ -277,7 +277,10 @@ function SubmissionWizard({
     setTagWritten(false);
     setTagTest("idle");
     setPushed(false);
-    setGuardians([{ relation: "Father", name: "" }]);
+    setGuardians([
+      { relation: "Father", name: "" },
+      { relation: "Mother", name: "" },
+    ]);
     setStream(level === "L3" ? "science" : "all");
     setMarks(getInitialMarks(level, level === "L3" ? "science" : "all"));
   }
@@ -321,6 +324,7 @@ function SubmissionWizard({
                       birthmark: String(form.get("birthmark") ?? "") || undefined,
                       faceIdNumber: String(form.get("faceIdNumber") ?? "") || undefined,
                       address: String(form.get("address") ?? "") || undefined,
+                      gender: String(form.get("gender") ?? "") || undefined,
                       guardians: guardians.filter((item) => item.name.trim()),
                       photoPath,
                       prevSchoolDocPath: docPath,
@@ -351,6 +355,14 @@ function SubmissionWizard({
                 </Field>
                 <Field label="Face ID number">
                   <Input name="faceIdNumber" />
+                </Field>
+                <Field label="Gender">
+                  <select name="gender" className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50">
+                    <option value="">Select...</option>
+                    <option value="MALE">Male</option>
+                    <option value="FEMALE">Female</option>
+                    <option value="OTHER">Other</option>
+                  </select>
                 </Field>
                 <Field label="Identifying birthmark">
                   <Input name="birthmark" />

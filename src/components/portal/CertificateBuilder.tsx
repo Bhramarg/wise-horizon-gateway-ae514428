@@ -38,8 +38,13 @@ const FONTS = [
   "cursive",
 ];
 
+const LEVELS = [
+  { id: "L2", name: "L2 - Secondary Examination" },
+  { id: "L3", name: "L3 - Higher Secondary Examination" }
+];
+
 export function CertificateBuilder() {
-  const [level, setLevel] = useState("L1");
+  const [level, setLevel] = useState("L2");
   const [backgroundUrl, setBackgroundUrl] = useState("");
   const [fields, setFields] = useState<CertificateField[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -55,10 +60,11 @@ export function CertificateBuilder() {
       try {
         const layout = await getFn({ data: { level } });
         if (layout) {
-          setBackgroundUrl(layout.background_url || "");
-          setFields(layout.fields as CertificateField[]);
+          setBackgroundUrl(layout.background_url || (level === "L2" ? "/bg1.png" : "/bg2.png"));
+          const f = Array.isArray(layout.fields) ? (layout.fields as any as CertificateField[]) : [];
+          setFields(f);
         } else {
-          setBackgroundUrl("");
+          setBackgroundUrl(level === "L2" ? "/bg1.png" : "/bg2.png");
           setFields([]);
         }
       } catch (e) {

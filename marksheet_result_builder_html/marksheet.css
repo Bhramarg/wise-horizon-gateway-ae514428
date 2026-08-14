@@ -1,0 +1,243 @@
+
+:root {
+  --page-w: 1404;
+  --page-h: 2047;
+
+  /* Content area measured against the supplied 1404 x 2047 artwork. */
+  --content-left: 7.2%;
+  --content-width: 85.6%;
+  --ink: #30302d;
+  --table-border: #3b3a35;
+  --serif: "Times New Roman", Times, serif;
+  --sans: Arial, Helvetica, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #ddd;
+}
+
+body {
+  font-family: var(--serif);
+  color: var(--ink);
+}
+
+.marksheet {
+  position: relative;
+  width: min(100vw, 1404px);
+  aspect-ratio: 1404 / 2047;
+  margin: 0 auto;
+  overflow: hidden;
+  background: #f8f5e8 url("./assets/marksheet-background.png") center / 100% 100% no-repeat;
+}
+
+/* All dynamic content is intentionally positioned in percentages so the
+   template scales with the source artwork and remains print-stable. */
+
+.candidate-block {
+  position: absolute;
+  left: 8.7%;
+  top: 26.9%;
+  width: 82.5%;
+  height: 12.6%;
+  font-size: clamp(8px, 0.95vw, 15px);
+  line-height: 1.42;
+}
+
+.candidate-row {
+  display: grid;
+  grid-template-columns: 27% 1fr 18%;
+  min-height: 1.52em;
+}
+
+.candidate-label {
+  white-space: nowrap;
+}
+
+.candidate-value {
+  padding-left: 0.6em;
+  font-weight: 400;
+}
+
+.photo {
+  position: absolute;
+  right: 0.5%;
+  top: 1%;
+  width: 17.6%;
+  height: 92%;
+  object-fit: contain;
+  object-position: center;
+  background: transparent;
+}
+
+.results-table-wrap {
+  position: absolute;
+  left: 8.7%;
+  top: 40.9%;
+  width: 82.5%;
+}
+
+.results-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: clamp(7px, 0.78vw, 12px);
+  background: rgba(248, 246, 235, 0.10);
+}
+
+.results-table th,
+.results-table td {
+  border: 1px solid var(--table-border);
+  padding: 0.22em 0.28em;
+  height: 1.78em;
+  vertical-align: middle;
+}
+
+.results-table th {
+  font-weight: 400;
+  text-align: center;
+  line-height: 1.0;
+}
+
+.results-table td {
+  line-height: 1.05;
+}
+
+.results-table .c-no   { width: 5%;  text-align: center; }
+.results-table .c-area { width: 27%; }
+.results-table .c-code { width: 7%;  text-align: center; }
+.results-table .c-name { width: 30%; }
+.results-table .c-max  { width: 13%; text-align: center; }
+.results-table .c-got  { width: 18%; text-align: center; }
+
+.results-table td.num {
+  text-align: center;
+}
+
+.summary {
+  margin-top: 0;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 22% 22% 56%;
+  border-left: 1px solid var(--table-border);
+  border-bottom: 1px solid var(--table-border);
+  font-size: clamp(7px, 0.78vw, 12px);
+}
+
+.summary-cell {
+  display: grid;
+  grid-template-columns: 55% 45%;
+  min-height: 3.2em;
+  border-right: 1px solid var(--table-border);
+  border-top: 1px solid var(--table-border);
+  align-items: stretch;
+}
+
+.summary-label {
+  display: flex;
+  align-items: center;
+  padding: 0.25em 0.35em;
+  border-right: 1px solid var(--table-border);
+}
+
+.summary-value {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25em 0.35em;
+  text-align: center;
+}
+
+.summary-title {
+  grid-column: 1 / -1;
+  text-align: center;
+  border-top: 1px solid var(--table-border);
+  border-right: 1px solid var(--table-border);
+  padding: 0.28em;
+  font-size: 1em;
+}
+
+.summary-percent .summary-value {
+  justify-content: flex-start;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.school-block {
+  position: absolute;
+  left: 8.7%;
+  top: 70.6%;
+  width: 82.5%;
+  font-size: clamp(7px, 0.78vw, 12px);
+  line-height: 1.28;
+}
+
+.school-row {
+  display: grid;
+  grid-template-columns: 11% 89%;
+  min-height: 1.45em;
+}
+
+.school-label {
+  white-space: nowrap;
+}
+
+.school-value {
+  padding-left: 0.4em;
+}
+
+.certification {
+  margin-top: 0.35em;
+  text-align: left;
+}
+
+.verification {
+  margin-top: 0.35em;
+}
+
+.bottom-dynamic {
+  position: absolute;
+  left: 8.7%;
+  top: 84.2%;
+  width: 82.5%;
+  height: 13.0%;
+  font-size: clamp(7px, 0.78vw, 12px);
+  line-height: 1.28;
+}
+
+.certificate-line {
+  margin-bottom: 0.2em;
+}
+
+.qr {
+  position: absolute;
+  left: 13.5%;
+  bottom: 3.0%;
+  width: 13.2%;
+  aspect-ratio: 1;
+  object-fit: contain;
+  background: white;
+}
+
+/* Print */
+@page {
+  size: auto;
+  margin: 0;
+}
+
+@media print {
+  html, body {
+    background: transparent;
+  }
+
+  .marksheet {
+    width: 100%;
+    margin: 0;
+    break-after: page;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+}

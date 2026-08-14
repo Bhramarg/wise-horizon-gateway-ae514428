@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Empty, Field, Panel, StatusChip, type Overview } from "@/components/portal/shell";
 import { deleteSubjectDefinition, saveSubjectDefinition } from "@/lib/portal.functions";
-import { ErrorMessage } from "@/components/portal/shell";
+import { errorMessage } from "@/lib/utils";
 
 export const LEVELS = [
   { id: "L2", name: "L2 - Secondary Examination" },
@@ -115,7 +115,7 @@ export function SubjectCatalogue({ data, refresh }: { data: Overview; refresh: (
               () =>
                 saveFn({
                   data: {
-                    level: String(form.get("level")) as (typeof LEVELS)[number],
+                    level: String(form.get("level")) as (typeof LEVELS)[number]["id"],
                     code: String(form.get("code") ?? ""),
                     name: String(form.get("name") ?? ""),
                     category: String(form.get("category")) as (typeof CATEGORIES)[number],

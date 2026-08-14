@@ -4,6 +4,9 @@ import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { CheckCircle2, CircleX, Clock, Download, ShieldCheck, FileDown } from "lucide-react";
 import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
+import { useRef } from "react";
+import { MarksheetTemplate } from "../components/portal/MarksheetTemplate";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,66 +51,32 @@ function VerifyPage() {
   const fetchImageFn = useServerFn(fetchDriveImageAsBase64);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
+  const marksheetRef = useRef<HTMLDivElement>(null);
+
   async function generatePdf() {
-    if (!data) return;
+    if (!data || !marksheetRef.current) return;
     try {
       setIsGeneratingPdf(true);
       setPortfolioMessage("");
       
       // We still need the portfolio key to be verified first before downloading the certificate.
-      // We can just verify it by calling redeemPortfolio even if we don't use the URL.
-      // Or we can just use the key if that's the logic. For now let's verify key.
       await redeemPortfolio({ data: { code, key } });
 
-      const layout = await getLayoutFn({ data: { level: data.qualification } });
-      if (!layout || !layout.background_url) {
-        throw new Error("No certificate template found for this qualification.");
-      }
+      const canvas = await html2canvas(marksheetRef.current, {
+        scale: 2, // Higher quality
+        useCORS: true,
+        allowTaint: true,
+      });
 
-      const { base64 } = await fetchImageFn({ data: { url: layout.background_url } });
-
+      const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF({
-        orientation: "landscape",
+        orientation: "portrait",
         unit: "pt",
-        format: [842, 595] // A4 landscape roughly
+        format: [canvas.width / 2, canvas.height / 2],
       });
 
-      pdf.addImage(base64, "JPEG", 0, 0, 842, 595);
-
-      const fields = layout.fields as any[];
-      fields.forEach(f => {
-        let text = "";
-        // Map common field names to data
-        const n = f.name.toLowerCase();
-        if (n.includes("name") || n.includes("learner")) text = data.learner;
-        else if (n.includes("qualification")) text = data.qualification;
-        else if (n.includes("grade")) text = data.grade || "";
-        else if (n.includes("institution")) text = data.institution;
-        else if (n.includes("number")) text = data.studentNumber;
-        else if (n.includes("period")) text = data.academicPeriod;
-        else if (n.includes("code")) text = data.verificationCode;
-        else text = f.name; // fallback to the placeholder name
-
-        if (!text) return;
-
-        // Approximate styling mapping
-        pdf.setTextColor(f.color);
-        pdf.setFontSize(f.fontSize * 0.7); // Approximate scaling
-        
-        let fontStyle = "normal";
-        if (f.bold && f.italic) fontStyle = "bolditalic";
-        else if (f.bold) fontStyle = "bold";
-        else if (f.italic) fontStyle = "italic";
-        pdf.setFont(f.fontFamily === "cursive" ? "times" : "helvetica", fontStyle);
-
-        const x = f.xPct * 842;
-        const y = f.yPct * 595;
-        const maxWidth = f.widthPct * 842;
-
-        pdf.text(text, x, y, { align: f.align, maxWidth });
-      });
-
-      pdf.save(`${data.learner.replace(/\s+/g, '_')}_Certificate.pdf`);
+      pdf.addImage(imgData, "PNG", 0, 0, canvas.width / 2, canvas.height / 2);
+      pdf.save(`${data.learner.replace(/\s+/g, "_")}_Certificate.pdf`);
     } catch (error) {
       setPortfolioMessage(errorMessage(error, "Could not generate PDF certificate."));
     } finally {
@@ -215,6 +184,13 @@ function VerifyPage() {
           </Link>
         </div>
       </div>
+      
+      {/* Hidden off-screen template for PDF generation */}
+      {data && data.state === "approved" && (
+        <div style={{ position: "absolute", left: "-9999px", top: "-9999px" }}>
+           <MarksheetTemplate data={data} backgroundUrl={data.qualification === "L2" ? "/bg1.png" : "/bg2.png"} ref={marksheetRef} />
+        </div>
+      )}
     </main>
   );
 }

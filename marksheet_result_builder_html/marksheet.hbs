@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{document_title}}</title>
+  <link rel="stylesheet" href="./marksheet.css">
+</head>
+<body>
+  <main class="marksheet">
+
+    <!-- Candidate information -->
+    <section class="candidate-block">
+      <div class="candidate-row">
+        <div class="candidate-label">Document Number</div>
+        <div class="candidate-value">: {{document_number}}</div>
+      </div>
+      <div class="candidate-row">
+        <div class="candidate-label">Academic Session</div>
+        <div class="candidate-value">: {{academic_session}}</div>
+      </div>
+      <div class="candidate-row">
+        <div class="candidate-label">Student Name</div>
+        <div class="candidate-value">: {{student_name}}</div>
+      </div>
+      <div class="candidate-row">
+        <div class="candidate-label">Date of Birth</div>
+        <div class="candidate-value">: {{date_of_birth}}</div>
+      </div>
+      <div class="candidate-row">
+        <div class="candidate-label">Date of Birth in Words</div>
+        <div class="candidate-value">: {{date_of_birth_words}}</div>
+      </div>
+      <div class="candidate-row">
+        <div class="candidate-label">Gender</div>
+        <div class="candidate-value">: {{gender}}</div>
+      </div>
+      <div class="candidate-row">
+        <div class="candidate-label">Father's Name</div>
+        <div class="candidate-value">: {{father_name}}</div>
+      </div>
+      <div class="candidate-row">
+        <div class="candidate-label">Mother's Name</div>
+        <div class="candidate-value">: {{mother_name}}</div>
+      </div>
+      <div class="candidate-row">
+        <div class="candidate-label">Candidate Roll No.</div>
+        <div class="candidate-value">: {{candidate_roll_no}}</div>
+      </div>
+
+      {{#if student_photo}}
+      <img class="photo" src="{{student_photo}}" alt="Student photograph">
+      {{/if}}
+    </section>
+
+    <!-- Dynamic subject/result table -->
+    <section class="results-table-wrap">
+      <table class="results-table">
+        <thead>
+          <tr>
+            <th class="c-no">S.<br>NO.</th>
+            <th class="c-area">SUBJECT AREA</th>
+            <th class="c-code">ISCED<br>CODE</th>
+            <th class="c-name">SUBJECT NAME</th>
+            <th class="c-max">MAXIMUM<br>MARKS</th>
+            <th class="c-got">MARKS<br>OBTAINED</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each subjects}}
+          <tr>
+            <td class="c-no num">{{addOne @index}}</td>
+            <td class="c-area">{{subject_area}}</td>
+            <td class="c-code num">{{isced_code}}</td>
+            <td class="c-name">{{subject_name}}</td>
+            <td class="c-max num">{{maximum_marks}}</td>
+            <td class="c-got num">{{marks_obtained}}</td>
+          </tr>
+          {{/each}}
+        </tbody>
+      </table>
+
+      <div class="summary">
+        <div class="summary-title">TOTAL SUMMARY</div>
+
+        <div class="summary-cell">
+          <div class="summary-label">MAXIMUM<br>MARKS:</div>
+          <div class="summary-value">{{maximum_total}}</div>
+        </div>
+
+        <div class="summary-cell">
+          <div class="summary-label">MARKS<br>OBTAINED:</div>
+          <div class="summary-value">{{marks_total}}</div>
+        </div>
+
+        <div class="summary-cell summary-percent">
+          <div class="summary-label">PERCENTAGE:</div>
+          <div class="summary-value">{{percentage}}% - {{percentage_in_words}}</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- School and certification -->
+    <section class="school-block">
+      <div class="school-row">
+        <div class="school-label">School Name:</div>
+        <div class="school-value">{{school_name}}</div>
+      </div>
+      <div class="school-row">
+        <div class="school-label">School Code:</div>
+        <div class="school-value">{{school_code}}</div>
+      </div>
+      <div class="school-row">
+        <div class="school-label">School Address:</div>
+        <div class="school-value">{{school_address}}</div>
+      </div>
+      <div class="school-row">
+        <div class="school-label">Website:</div>
+        <div class="school-value">{{school_website}} &nbsp;|&nbsp; Email: {{school_email}}</div>
+      </div>
+
+      <div class="certification">
+        This marksheet is issued under the academic evaluation framework of the World Education Quality
+        Standards Commission (WEQSC) and is aligned with the UNESCO ISCED 1997 – Level 2 classification
+        of education.<br>
+        This is to certify that <strong>{{student_name}}</strong> has successfully completed the
+        {{examination_name}} with {{percentage}}% percentage for the exam held during {{examination_month}}.
+      </div>
+    </section>
+
+    <!-- Verification / certificate metadata / QR -->
+    <section class="bottom-dynamic">
+      <div class="certificate-line">Certificate No.: {{certificate_number}} &nbsp;|&nbsp; Issued on: {{issued_on}}</div>
+      <div class="verification">Verify at: {{verification_url}}</div>
+
+      {{#if qr_code_data_url}}
+      <img class="qr" src="{{qr_code_data_url}}" alt="Verification QR code">
+      {{/if}}
+    </section>
+
+  </main>
+</body>
+</html>

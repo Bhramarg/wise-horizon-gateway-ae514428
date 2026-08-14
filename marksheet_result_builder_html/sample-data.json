@@ -1,0 +1,107 @@
+{
+  "document_title": "WISE Marksheet",
+  "document_number": "WISE-MMG35RMY-HK2QMB",
+  "academic_session": "2006 - 2007",
+  "student_name": "JITENDRA BEHERA",
+  "date_of_birth": "07 - 07 - 1990",
+  "date_of_birth_words": "SEVEN JULY NINETEEN NINETY",
+  "gender": "MALE",
+  "father_name": "MR. UPENDRA BEHERA",
+  "mother_name": "MRS. DROUPADI BEHERA",
+  "candidate_roll_no": "WISE/IN/ALM788/0707906577",
+  "student_photo": "",
+  "subjects": [
+    {
+      "subject_area": "Language I",
+      "isced_code": "0232",
+      "subject_name": "Odia",
+      "maximum_marks": 100,
+      "marks_obtained": 72
+    },
+    {
+      "subject_area": "Language II",
+      "isced_code": "0232",
+      "subject_name": "Hindi",
+      "maximum_marks": 100,
+      "marks_obtained": 77
+    },
+    {
+      "subject_area": "Language III",
+      "isced_code": "0231",
+      "subject_name": "English",
+      "maximum_marks": 100,
+      "marks_obtained": 68
+    },
+    {
+      "subject_area": "Mathematics",
+      "isced_code": "0541",
+      "subject_name": "Mathematics",
+      "maximum_marks": 100,
+      "marks_obtained": 66
+    },
+    {
+      "subject_area": "Science",
+      "isced_code": "0521",
+      "subject_name": "Environmental Science",
+      "maximum_marks": 100,
+      "marks_obtained": 61
+    },
+    {
+      "subject_area": "Social Sciences",
+      "isced_code": "0314",
+      "subject_name": "Social Science",
+      "maximum_marks": 100,
+      "marks_obtained": 68
+    },
+    {
+      "subject_area": "ICT / Computer Education",
+      "isced_code": "0611",
+      "subject_name": "Computer Science",
+      "maximum_marks": 100,
+      "marks_obtained": 60
+    },
+    {
+      "subject_area": "Health & Physical Ed.",
+      "isced_code": "1014",
+      "subject_name": "Physical Education",
+      "maximum_marks": 50,
+      "marks_obtained": 35
+    },
+    {
+      "subject_area": "Work & General Skills",
+      "isced_code": "0031",
+      "subject_name": "Work Education (SUPW)",
+      "maximum_marks": 50,
+      "marks_obtained": 36
+    },
+    {
+      "subject_area": "Arts",
+      "isced_code": "0213",
+      "subject_name": "Art Education / Drawing",
+      "maximum_marks": 50,
+      "marks_obtained": 33
+    },
+    {
+      "subject_area": "Ethics & Value Education",
+      "isced_code": "0223",
+      "subject_name": "Moral Science / Value Education",
+      "maximum_marks": 50,
+      "marks_obtained": 34
+    }
+  ],
+  "maximum_total": 900,
+  "marks_total": 610,
+  "percentage": "67.77",
+  "percentage_in_words": "Sixty-Seven Point Seven Seven Percentage",
+  "school_name": "Almonte Higher Secondary School",
+  "school_code": "ALM788",
+  "school_address": "Lower Lingti, Upper Siang District, Arunachal Pradesh – 791006, India",
+  "school_website": "https://alom.ac",
+  "school_email": "info@almonte.ac",
+  "examination_name": "WISE Secondary Examination Level 1",
+  "examination_month": "March 2007",
+  "certificate_number": "WEQSC/IN/ALM788/6577",
+  "issued_on": "30TH JUNE 2007",
+  "verification_url": "https://wise.weqsc.org",
+  "qr_code_data_url": ""
+}

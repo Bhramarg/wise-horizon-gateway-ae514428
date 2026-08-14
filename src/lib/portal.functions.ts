@@ -81,6 +81,7 @@ export const createStudent = createServerFn({ method: "POST" })
         studentNumber: z.string().min(1).max(60),
         programme: z.string().min(2).max(160),
         dateOfBirth: z.string().max(20).optional(),
+        gender: z.string().max(20).optional(),
         caste: z.string().max(80).optional(),
         birthmark: z.string().max(200).optional(),
         faceIdNumber: z.string().max(80).optional(),

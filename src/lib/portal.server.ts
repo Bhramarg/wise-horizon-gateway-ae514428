@@ -171,6 +171,7 @@ export type StudentInput = {
   studentNumber: string;
   programme: string;
   dateOfBirth?: string | undefined;
+  gender?: string | undefined;
   caste?: string | undefined;
   birthmark?: string | undefined;
   faceIdNumber?: string | undefined;
@@ -196,6 +197,7 @@ export async function addStudent(client: Client, userId: string, input: StudentI
       face_id_number: input.faceIdNumber || null,
       address: input.address || null,
       guardians: input.guardians as unknown as Json,
+      metadata: { gender: input.gender || null } as Json,
       photo_path: input.photoPath || null,
       prev_school_doc_path: input.prevSchoolDocPath || null,
     })
@@ -411,7 +413,7 @@ export async function getPublicCertificate(code: string, token?: string) {
   const { data, error } = await supabaseAdmin
     .from("results")
     .select(
-      "id, verification_code, qualification, academic_period, marks, total, grade, status, issued_at, revoked_at, portfolio_path, students(full_name, student_number, programme), institutions(name, code)",
+      "id, verification_code, qualification, academic_period, marks, total, grade, status, issued_at, revoked_at, portfolio_path, students(full_name, student_number, programme, date_of_birth, guardians, metadata), institutions(name, code)",
     )
     .eq("verification_code", code)
     .maybeSingle();
@@ -436,6 +438,9 @@ export async function getPublicCertificate(code: string, token?: string) {
     learner: data.students?.full_name ?? "—",
     studentNumber: data.students?.student_number ?? "—",
     programme: data.students?.programme ?? "—",
+    dateOfBirth: data.students?.date_of_birth ?? null,
+    gender: (data.students?.metadata as any)?.gender ?? null,
+    guardians: data.students?.guardians as unknown as Array<{ relation: string; name: string; }> | null,
     qualification: data.qualification,
     academicPeriod: data.academic_period,
     institution: data.institutions?.name ?? "—",
