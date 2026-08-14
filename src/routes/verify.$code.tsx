@@ -6,6 +6,7 @@ import { CheckCircle2, CircleX, Clock, Download, ShieldCheck } from "lucide-reac
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { redeemPortfolio, verifyCertificate } from "@/lib/portal.functions";
+import { errorMessage } from "@/lib/utils";
 
 export const Route = createFileRoute("/verify/$code")({
   head: () => ({
@@ -37,7 +38,7 @@ function VerifyPage() {
       const { url } = await redeemPortfolio({ data: { code, key } });
       window.open(url, "_blank", "noopener");
     } catch (error) {
-      setPortfolioMessage(error instanceof Error ? error.message : "The portfolio key could not be verified.");
+      setPortfolioMessage(errorMessage(error, "The portfolio key could not be verified."));
     }
   }
 
