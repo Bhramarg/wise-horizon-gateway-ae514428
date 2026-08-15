@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
+import { neon } from "../../lib/neon";
 
 export const Route = createFileRoute("/auth/callback")({
   component: AuthCallback,
@@ -11,29 +12,16 @@ function AuthCallback() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Neon Auth might pass token in hash or search query
-    const hashParams = new URLSearchParams(window.location.hash.replace("#", "?"));
-    const queryParams = new URLSearchParams(window.location.search);
+    // We received a callback. The neon client handles neon_auth_session_verifier automatically
+    // when we call a method like getSession() or just initialize it on the page.
+    // Let's call getSession() to force it to exchange the verifier.
     
-    const accessToken = hashParams.get("access_token") || queryParams.get("access_token") || queryParams.get("token");
-    const errorDesc = hashParams.get("error_description") || queryParams.get("error") || queryParams.get("error_description");
-
-    if (errorDesc) {
-      setError(errorDesc);
-      return;
-    }
-
-    if (accessToken) {
-      // Save token in cookie for server functions
-      document.cookie = `neon_access_token=${accessToken}; path=/; max-age=86400; secure; samesite=lax`;
-      
-      // Clear hash and redirect to portal
-      window.history.replaceState(null, "", window.location.pathname);
-      navigate({ to: "/portal" });
-    } else {
-      // Debug: what did we get?
-      setError(`No access token found in URL. Hash: ${window.location.hash}, Search: ${window.location.search}`);
-    }
+    neon.auth.getSession().then(({ data, error }) => {
+      // DEBUG LOG OUTPUT
+      setError(`Session Data: ${JSON.stringify(data)}, Cookies: ${document.cookie}`);
+    }).catch(err => {
+      setError("Error getting session: " + err.message);
+    });
   }, [navigate]);
 
   return (
