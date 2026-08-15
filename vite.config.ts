@@ -18,7 +18,7 @@ export default defineConfig({
     },
     ssr: {
       noExternal: ["@tanstack/react-start", "@tanstack/react-router"],
-      external: ["mongoose", "mongodb", "bcryptjs"],
+      external: ["pg", "bcryptjs"],
     },
   },
 });

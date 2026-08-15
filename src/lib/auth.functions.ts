@@ -5,15 +5,15 @@ export const loginFn = createServerFn({ method: "POST" })
   .validator((d: any) => d)
   .handler(async ({ data: input }) => {
     // Dynamic imports for server-side only packages
-    const { connectDB } = await import("../../backend/database/db.js");
-    const { User } = await import("../../backend/database/models.js");
+    const { query } = await import("../../backend/database/db.js");
     const bcrypt = (await import('bcryptjs')).default;
     const jwt = (await import('jsonwebtoken')).default;
 
-    await connectDB();
     const { email, password } = input;
 
-    const user = await User.findOne({ email });
+    const { rows } = await query(`SELECT * FROM public.users WHERE email = $1 LIMIT 1`, [email]);
+    const user = rows[0];
+    
     if (!user) {
       throw new Error("Invalid credentials");
     }
@@ -27,7 +27,7 @@ export const loginFn = createServerFn({ method: "POST" })
     if (!secret) throw new Error("JWT_SECRET is not configured");
 
     const token = jwt.sign(
-      { userId: user._id.toString(), email: user.email },
+      { userId: user.id.toString(), email: user.email },
       secret,
       { expiresIn: "1d" }
     );
@@ -42,21 +42,22 @@ export const loginFn = createServerFn({ method: "POST" })
 
     return { 
       success: true, 
-      requiresPasswordChange: user.requiresPasswordChange 
+      // Supabase users table may not have requiresPasswordChange by default, handle gracefully
+      requiresPasswordChange: user.requires_password_change || false 
     };
   });
 
 export const changePasswordFn = createServerFn({ method: "POST" })
   .validator((d: any) => d)
   .handler(async ({ data: input }) => {
-    const { connectDB } = await import("../../backend/database/db.js");
-    const { User } = await import("../../backend/database/models.js");
+    const { query } = await import("../../backend/database/db.js");
     const bcrypt = (await import('bcryptjs')).default;
 
-    await connectDB();
     const { email, oldPassword, newPassword } = input;
 
-    const user = await User.findOne({ email });
+    const { rows } = await query(`SELECT * FROM public.users WHERE email = $1 LIMIT 1`, [email]);
+    const user = rows[0];
+    
     if (!user) throw new Error("User not found");
 
     const isMatch = await bcrypt.compare(oldPassword, user.password_hash as string);
@@ -65,9 +66,11 @@ export const changePasswordFn = createServerFn({ method: "POST" })
     const salt = await bcrypt.genSalt(10);
     const password_hash = await bcrypt.hash(newPassword, salt);
 
-    user.password_hash = password_hash;
-    user.requiresPasswordChange = false;
-    await user.save();
+    await query(`
+      UPDATE public.users 
+      SET password_hash = $1, requires_password_change = false 
+      WHERE id = $2
+    `, [password_hash, user.id]);
 
     return { success: true };
   });

@@ -9,8 +9,7 @@ export interface AuthContext {
 
 export const requireAuth = createMiddleware({ type: 'function' }).server(
   async ({ next }) => {
-    const { connectDB } = await import('../../backend/database/db.js');
-    const { User } = await import('../../backend/database/models.js');
+    const { query } = await import('../../backend/database/db.js');
     const jwt = (await import('jsonwebtoken')).default;
 
     // 1. Get the session token from the cookie
@@ -32,15 +31,16 @@ export const requireAuth = createMiddleware({ type: 'function' }).server(
         throw new Error("Invalid token payload: missing userId");
       }
 
-      await connectDB();
-      const user = await User.findById(userId);
+      // 3. Verify user in Supabase
+      const { rows } = await query(`SELECT * FROM public.users WHERE id = $1`, [userId]);
+      const user = rows[0];
 
       if (!user) {
         throw new Error("User no longer exists");
       }
 
       const context: AuthContext = {
-        userId: user._id.toString(),
+        userId: user.id.toString(),
         email: user.email,
         roles: user.roles || []
       };

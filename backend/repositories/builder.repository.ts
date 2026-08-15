@@ -1,38 +1,32 @@
-import { CertificateTemplate, CertificateTemplateVersion } from "../database/models.js";
-import { connectDB } from "../database/db.js";
+import { query } from "../database/db.js";
 
 export async function listCertificateTemplates() {
-  await connectDB();
-  const templates = await CertificateTemplate.find().sort({ created_at: -1 });
-  const result = [];
-  for (const t of templates) {
-    const versions = await CertificateTemplateVersion.find({ template_id: t._id });
-    result.push({
-      ...t.toObject(),
-      id: t._id,
-      versions: versions.map(v => ({ ...v.toObject(), id: v._id }))
-    });
-  }
-  return result;
+  const { rows } = await query(`
+    SELECT t.*, 
+      (SELECT json_agg(v.*) FROM public.certificate_template_versions v WHERE v.template_id = t.id) as versions
+    FROM public.certificate_templates t
+    ORDER BY created_at DESC
+  `);
+  return rows;
 }
 
 export async function getTemplateVersion(versionId: string) {
-  await connectDB();
-  const v = await CertificateTemplateVersion.findById(versionId);
-  return v ? { ...v.toObject(), id: v._id } : null;
+  const { rows } = await query(`
+    SELECT * FROM public.certificate_template_versions WHERE id = $1
+  `, [versionId]);
+  return rows[0] || null;
 }
 
 export async function saveTemplateVersion(userId: string, input: any) {
-  await connectDB();
-  await CertificateTemplateVersion.findByIdAndUpdate(input.version_id, {
-    html: input.html,
-    css: input.css,
-    background_asset: input.background_asset,
-    page2_html: input.page2_html,
-    page2_css: input.page2_css,
-    page2_background_asset: input.page2_background_asset,
-    metadata: input.metadata,
-    updated_by: userId,
-    updated_at: new Date()
-  });
+  await query(`
+    UPDATE public.certificate_template_versions 
+    SET html = $1, css = $2, background_asset = $3, 
+        page2_html = $4, page2_css = $5, page2_background_asset = $6, 
+        metadata = $7, updated_by = $8, updated_at = NOW()
+    WHERE id = $9
+  `, [
+    input.html, input.css, input.background_asset, 
+    input.page2_html, input.page2_css, input.page2_background_asset, 
+    input.metadata, userId, input.version_id
+  ]);
 }
