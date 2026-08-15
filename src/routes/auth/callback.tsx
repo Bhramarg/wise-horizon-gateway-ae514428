@@ -11,12 +11,12 @@ function AuthCallback() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Neon Auth typically passes the token in the URL hash, e.g. #access_token=...
-    const hash = window.location.hash;
-    const params = new URLSearchParams(hash.replace("#", "?"));
+    // Neon Auth might pass token in hash or search query
+    const hashParams = new URLSearchParams(window.location.hash.replace("#", "?"));
+    const queryParams = new URLSearchParams(window.location.search);
     
-    const accessToken = params.get("access_token");
-    const errorDesc = params.get("error_description");
+    const accessToken = hashParams.get("access_token") || queryParams.get("access_token") || queryParams.get("token");
+    const errorDesc = hashParams.get("error_description") || queryParams.get("error") || queryParams.get("error_description");
 
     if (errorDesc) {
       setError(errorDesc);
@@ -31,7 +31,8 @@ function AuthCallback() {
       window.history.replaceState(null, "", window.location.pathname);
       navigate({ to: "/portal" });
     } else {
-      setError("No access token found in URL");
+      // Debug: what did we get?
+      setError(`No access token found in URL. Hash: ${window.location.hash}, Search: ${window.location.search}`);
     }
   }, [navigate]);
 
