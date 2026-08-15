@@ -17,7 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { createDmsUser, createInstitution, deleteResult, updateResultStatus } from "@/lib/portal.functions";
+import { createDmsUser, createInstitution, deleteResult, updateResultStatus, addInstitutionDocument } from "@/lib/portal.functions";
 import { Empty, Field, Metric, Panel, StatusChip, Surface, type Overview } from "@/components/portal/shell";
 import { SubjectCatalogue } from "@/components/portal/SubjectCatalogue";
 import { CertificateBuilder } from "@/components/portal/CertificateBuilder";
@@ -34,6 +34,7 @@ const DECISIONS = [
 
 export function AdminWorkspace({ data, refresh }: { data: Overview; refresh: () => Promise<unknown> }) {
   const institutionFn = useServerFn(createInstitution);
+  const addInstitutionDocumentFn = useServerFn(addInstitutionDocument);
   const dmsFn = useServerFn(createDmsUser);
   const statusFn = useServerFn(updateResultStatus);
   const deleteFn = useServerFn(deleteResult);
@@ -61,6 +62,22 @@ export function AdminWorkspace({ data, refresh }: { data: Overview; refresh: () 
       window.open(res.url, "_blank");
     } catch (e) {
       setMessage(errorMessage(e, "Could not open file."));
+    }
+  }
+
+  async function downloadFile(bucket: "student-files" | "portfolios", path: string, filename: string) {
+    try {
+      const res = await signedUrlFn({ data: { bucket, path } });
+      const response = await fetch(res.url);
+      const blob = await response.blob();
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (e) {
+      console.error("Download failed for", path, e);
     }
   }
 
@@ -189,6 +206,50 @@ export function AdminWorkspace({ data, refresh }: { data: Overview; refresh: () 
                         View Portfolio
                       </Button>
                     )}
+                    <Button
+                      size="sm"
+                      variant="default"
+                      onClick={async () => {
+                        setMessage(`Downloading data for ${s?.full_name}...`);
+                        try {
+                          if (s?.photo_path) {
+                            await downloadFile("student-files", s.photo_path, `photo_${s.student_number}.jpg`);
+                          }
+                          if (s?.prev_school_doc_path) {
+                            await downloadFile("student-files", s.prev_school_doc_path, `prev_doc_${s.student_number}.pdf`);
+                          }
+                          if (result.portfolio_path) {
+                            await downloadFile("portfolios", result.portfolio_path, `portfolio_${s.student_number}.zip`);
+                          }
+                          
+                          // Download student JSON data
+                          const studentData = {
+                            name: s?.full_name,
+                            hall_ticket: s?.student_number,
+                            dob: s?.date_of_birth,
+                            address: s?.address,
+                            gender: meta?.gender,
+                            caste: s?.caste,
+                            face_id: s?.face_id_number,
+                            country: meta?.country,
+                            guardians: guardians
+                          };
+                          const blob = new Blob([JSON.stringify(studentData, null, 2)], { type: "application/json" });
+                          const link = document.createElement("a");
+                          link.href = URL.createObjectURL(blob);
+                          link.download = `student_data_${s?.student_number}.json`;
+                          document.body.appendChild(link);
+                          link.click();
+                          document.body.removeChild(link);
+                          
+                          setMessage(`Downloads complete for ${s?.full_name}.`);
+                        } catch (e) {
+                          setMessage(errorMessage(e, "Could not download all files."));
+                        }
+                      }}
+                    >
+                      Download All Data
+                    </Button>
                   </div>
 
                   <Input
@@ -262,6 +323,51 @@ export function AdminWorkspace({ data, refresh }: { data: Overview; refresh: () 
                     <StatusChip status={result.status} />
                     <Button
                       size="sm"
+                      variant="default"
+                      onClick={async () => {
+                        setMessage(`Downloading data for ${result.students?.full_name}...`);
+                        try {
+                          if (result.students?.photo_path) {
+                            await downloadFile("student-files", result.students.photo_path, `photo_${result.students.student_number}.jpg`);
+                          }
+                          if (result.students?.prev_school_doc_path) {
+                            await downloadFile("student-files", result.students.prev_school_doc_path, `prev_doc_${result.students.student_number}.pdf`);
+                          }
+                          if (result.portfolio_path) {
+                            await downloadFile("portfolios", result.portfolio_path, `portfolio_${result.students?.student_number}.zip`);
+                          }
+                          
+                          // Download student JSON data
+                          const metaData = result.students?.metadata as any;
+                          const studentData = {
+                            name: result.students?.full_name,
+                            hall_ticket: result.students?.student_number,
+                            dob: result.students?.date_of_birth,
+                            address: result.students?.address,
+                            gender: metaData?.gender,
+                            caste: result.students?.caste,
+                            face_id: result.students?.face_id_number,
+                            country: metaData?.country,
+                            guardians: result.students?.guardians
+                          };
+                          const blob = new Blob([JSON.stringify(studentData, null, 2)], { type: "application/json" });
+                          const link = document.createElement("a");
+                          link.href = URL.createObjectURL(blob);
+                          link.download = `student_data_${result.students?.student_number}.json`;
+                          document.body.appendChild(link);
+                          link.click();
+                          document.body.removeChild(link);
+                          
+                          setMessage(`Downloads complete for ${result.students?.full_name}.`);
+                        } catch (e) {
+                          setMessage(errorMessage(e, "Could not download all files."));
+                        }
+                      }}
+                    >
+                      Download All Data
+                    </Button>
+                    <Button
+                      size="sm"
                       variant="outline"
                       onClick={() =>
                         run(
@@ -290,7 +396,25 @@ export function AdminWorkspace({ data, refresh }: { data: Overview; refresh: () 
               event.preventDefault();
               const form = new FormData(event.currentTarget);
               void run(
-                () => institutionFn({ data: { name: String(form.get("name") ?? ""), code: String(form.get("code") ?? "") } }),
+                async () => {
+                  const inst = await institutionFn({ data: { name: String(form.get("name") ?? ""), code: String(form.get("code") ?? "") } });
+                  const doc = form.get("document") as File | null;
+                  if (doc && doc.size) {
+                    const path = `${inst.id}/${crypto.randomUUID()}-${doc.name.replace(/[^\w.\-]/g, "_")}`;
+                    const { supabase } = await import("@/integrations/supabase/client");
+                    const { error: uploadError } = await supabase.storage.from("institution-files").upload(path, doc, { upsert: false });
+                    if (!uploadError) {
+                      await addInstitutionDocumentFn({
+                        data: {
+                          institutionId: inst.id,
+                          name: doc.name,
+                          path,
+                          shareWithDms: form.get("shareWithDms") === "on"
+                        }
+                      });
+                    }
+                  }
+                },
                 "Institution created.",
               );
               event.currentTarget.reset();
@@ -302,21 +426,75 @@ export function AdminWorkspace({ data, refresh }: { data: Overview; refresh: () 
             <Field label="Centre code">
               <Input name="code" required placeholder="CH-GVA-01" />
             </Field>
+            <Field label="Important document (Optional)" hint="e.g. School License">
+              <Input name="document" type="file" />
+            </Field>
+            <label className="flex items-center gap-2 text-sm text-muted-foreground">
+              <input type="checkbox" name="shareWithDms" className="rounded border-gray-300" /> Share document with DMS / Students
+            </label>
             <Button type="submit">Create institution</Button>
           </form>
         </Panel>
         <Panel title="Registered institutions" icon={Building2}>
           {data.institutions.length ? (
             <div className="divide-y divide-border/60">
-              {data.institutions.map((item) => (
-                <div key={item.id} className="flex items-center justify-between py-3">
-                  <div>
-                    <p className="text-sm font-medium">{item.name}</p>
-                    <p className="text-xs text-muted-foreground">{item.code}</p>
+              {data.institutions.map((item) => {
+                const docs = (item as any).documents as any[] || [];
+                return (
+                <div key={item.id} className="py-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium">{item.name}</p>
+                      <p className="text-xs text-muted-foreground">{item.code}</p>
+                    </div>
+                    <StatusChip status={item.active ? "approved" : "on_hold"} />
                   </div>
-                  <StatusChip status={item.active ? "approved" : "on_hold"} />
+                  
+                  {docs.length > 0 && (
+                    <div className="bg-muted/30 p-3 rounded-lg text-sm space-y-2">
+                      <p className="text-xs font-semibold uppercase text-muted-foreground">Documents</p>
+                      {docs.map((d, i) => (
+                        <div key={i} className="flex items-center justify-between">
+                          <span className="text-muted-foreground">{d.name} {d.shareWithDms ? '(Shared)' : '(Private)'}</span>
+                          <Button size="sm" variant="ghost" onClick={() => downloadFile("institution-files", d.path, d.name)}>View</Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <form 
+                    className="flex gap-2 items-center"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      const form = new FormData(e.currentTarget);
+                      const doc = form.get("new_doc") as File | null;
+                      if (!doc || !doc.size) return;
+                      void run(async () => {
+                        const path = `${item.id}/${crypto.randomUUID()}-${doc.name.replace(/[^\w.\-]/g, "_")}`;
+                        const { supabase } = await import("@/integrations/supabase/client");
+                        const { error: uploadError } = await supabase.storage.from("institution-files").upload(path, doc, { upsert: false });
+                        if (uploadError) throw uploadError;
+                        
+                        await addInstitutionDocumentFn({
+                          data: {
+                            institutionId: item.id,
+                            name: doc.name,
+                            path,
+                            shareWithDms: form.get("shareWithDms") === "on"
+                          }
+                        });
+                      }, "Document uploaded successfully.");
+                      e.currentTarget.reset();
+                    }}
+                  >
+                    <Input type="file" name="new_doc" className="h-8 text-xs flex-1" required />
+                    <label className="text-xs flex items-center gap-1 text-muted-foreground whitespace-nowrap">
+                      <input type="checkbox" name="shareWithDms" className="rounded" /> Share
+                    </label>
+                    <Button size="sm" type="submit">Upload</Button>
+                  </form>
                 </div>
-              ))}
+              )})}
             </div>
           ) : (
             <Empty text="No institutions registered." />

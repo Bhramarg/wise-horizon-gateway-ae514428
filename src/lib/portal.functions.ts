@@ -27,6 +27,21 @@ export const createInstitution = createServerFn({ method: "POST" })
     return createInstitutionForAdmin(context.supabase, context.userId, data);
   });
 
+export const addInstitutionDocument = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({
+      institutionId: z.string().uuid(),
+      name: z.string().min(1).max(200),
+      path: z.string().min(1),
+      shareWithDms: z.boolean()
+    }).parse(input)
+  )
+  .handler(async ({ data, context }) => {
+    const { addInstitutionDocument: addDoc } = await import("./portal.server");
+    return addDoc(context.supabase, context.userId, data);
+  });
+
 export const createDmsUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
@@ -232,7 +247,7 @@ export const deleteResult = createServerFn({ method: "POST" })
 export const getSignedFile = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
-    z.object({ bucket: z.enum(["student-files", "portfolios"]), path: z.string().min(3).max(300) }).parse(input),
+    z.object({ bucket: z.enum(["student-files", "portfolios", "institution-files"]), path: z.string().min(3).max(300) }).parse(input),
   )
   .handler(async ({ data, context }) => {
     const { signedFileUrl } = await import("./portal.server");

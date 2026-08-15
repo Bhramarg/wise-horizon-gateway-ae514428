@@ -292,6 +292,7 @@ export type Database = {
           id: string
           name: string
           updated_at: string
+          documents: Json | null
         }
         Insert: {
           active?: boolean
@@ -300,6 +301,7 @@ export type Database = {
           id?: string
           name: string
           updated_at?: string
+          documents?: Json | null
         }
         Update: {
           active?: boolean
@@ -308,6 +310,7 @@ export type Database = {
           id?: string
           name?: string
           updated_at?: string
+          documents?: Json | null
         }
         Relationships: []
       }

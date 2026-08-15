@@ -60,9 +60,44 @@ export async function buildFinalHtml(
   const css2 = template.page2_css || "";
   const bgStyle2 = await resolveBackground(template.page2_background_asset);
 
-  // Determine if Page 2 should be rendered. We'll render it if there is any content, css, or background.
-  // Actually, the user said "keep 2 pages by default", meaning we always output 2 pages.
+  // Determine if Page 2 should be rendered.
   const hasPage2 = !!(template.page2_html || template.page2_css || template.page2_background_asset);
+
+  // --- Process Overlays (Visual Builder Fields) ---
+  const metadata = template.metadata as any || {};
+  const elements1 = Array.isArray(metadata) ? metadata : (metadata.elements || []);
+  const elements2 = Array.isArray(metadata) ? [] : (metadata.page2_elements || []);
+
+  function generateFieldsHtml(elements: any[]) {
+    if (!elements || !Array.isArray(elements)) return "";
+    return elements.map(f => {
+      let displayText = f.name;
+      if (placeholderMap[f.name] !== undefined) {
+        displayText = placeholderMap[f.name] || "";
+      }
+      return `
+        <div style="
+          position: absolute;
+          left: ${f.xPct * 100}%;
+          top: ${f.yPct * 100}%;
+          font-size: ${f.fontSize}px;
+          color: ${f.color};
+          font-family: ${f.fontFamily};
+          font-weight: ${f.bold ? 700 : 400};
+          font-style: ${f.italic ? "italic" : "normal"};
+          text-align: ${f.align};
+          width: ${f.widthPct * 100}%;
+          transform: translate(-0.5px, -0.5px);
+          white-space: pre-wrap;
+          line-height: 1.2;
+          z-index: 10;
+        ">${displayText}</div>
+      `;
+    }).join("");
+  }
+
+  const overlays1 = generateFieldsHtml(elements1);
+  const overlays2 = generateFieldsHtml(elements2);
 
   const finalHtml = `
 <!DOCTYPE html>
@@ -122,12 +157,14 @@ export async function buildFinalHtml(
   <div class="page-container">
     <div id="bg-1"></div>
     <div id="content-1">${html1}</div>
+    ${overlays1}
   </div>
 
   <!-- PAGE 2 -->
   <div class="page-container">
     <div id="bg-2"></div>
     <div id="content-2">${html2}</div>
+    ${overlays2}
   </div>
 </body>
 </html>

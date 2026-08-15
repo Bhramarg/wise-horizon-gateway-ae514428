@@ -39,7 +39,7 @@ export async function getPortalOverviewForUser(client: Client, userId: string, e
     }
   }
   const [{ data: institutions }, { data: students }, { data: results }, { data: tags }, { data: subjects }] = await Promise.all([
-    client.from("institutions").select("id, name, code, active").order("name"),
+    client.from("institutions").select("id, name, code, active, documents").order("name"),
     client
       .from("students")
       .select("id, institution_id, student_number, full_name, programme, date_of_birth, expires_at, photo_path, created_at, metadata, caste, birthmark, face_id_number, address, guardians, prev_school_doc_path")
@@ -139,6 +139,41 @@ export async function createInstitutionForAdmin(client: Client, userId: string, 
     .insert({ name: input.name, code: input.code.trim().toUpperCase() })
     .select("id, name, code, active")
     .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function addInstitutionDocument(
+  client: Client,
+  userId: string,
+  input: { institutionId: string; name: string; path: string; shareWithDms: boolean }
+) {
+  await assertAdmin(client, userId);
+  
+  // Get current documents
+  const { data: inst, error: getError } = await client
+    .from("institutions")
+    .select("documents")
+    .eq("id", input.institutionId)
+    .single();
+    
+  if (getError) throw getError;
+  
+  const documents = (inst.documents as any[]) || [];
+  documents.push({
+    name: input.name,
+    path: input.path,
+    shareWithDms: input.shareWithDms,
+    uploadedAt: new Date().toISOString()
+  });
+  
+  const { data, error } = await client
+    .from("institutions")
+    .update({ documents: documents as unknown as Json })
+    .eq("id", input.institutionId)
+    .select("id, name, documents")
+    .single();
+    
   if (error) throw error;
   return data;
 }
@@ -431,7 +466,12 @@ export async function deleteResultAsAdmin(client: Client, userId: string, result
 }
 
 export async function deleteDraftResult(client: Client, userId: string, resultId: string) {
-  const { error } = await client.from("results").delete().eq("id", resultId).eq("status", "draft");
+  const { error } = await client
+    .from("results")
+    .delete()
+    .eq("id", resultId)
+    .neq("status", "issued")
+    .neq("status", "approved");
   if (error) throw error;
   return { ok: true as const };
 }

@@ -88,6 +88,9 @@ const toRow = (subject: SubjectRow): MarkRow => ({
 
 export function DmsWorkspace({ data, refresh }: { data: Overview; refresh: () => Promise<unknown> }) {
   const institutionId = data.memberships.find((item) => item.active)?.institution_id ?? data.institutions[0]?.id ?? "";
+  const myInstitution = data.institutions.find(i => i.id === institutionId);
+  const myDocuments = ((myInstitution as any)?.documents as any[] || []).filter(d => d.shareWithDms);
+  
   const [tab, setTab] = useState("overview");
   const [draftId, setDraftId] = useState<string | null>(null);
   const pending = data.results.filter((item) => item.status === "submitted").length;
@@ -160,6 +163,37 @@ export function DmsWorkspace({ data, refresh }: { data: Overview; refresh: () =>
             <Empty text="No marksheets yet. Start a new submission." />
           )}
         </Panel>
+
+        {myDocuments.length > 0 && (
+          <Panel title="Institution documents" description="Documents shared by administrators." icon={FileText}>
+            <div className="divide-y divide-border/60">
+              {myDocuments.map((doc, i) => (
+                <div key={i} className="flex items-center justify-between py-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">{doc.name}</p>
+                    <p className="truncate text-xs text-muted-foreground">Uploaded {new Date(doc.uploadedAt).toLocaleDateString()}</p>
+                  </div>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={async () => {
+                      try {
+                        const { getSignedFile } = await import("@/lib/portal.functions");
+                        const res = await getSignedFile({ data: { bucket: "institution-files" as any, path: doc.path } });
+                        window.open(res.url, "_blank");
+                      } catch (e) {
+                        console.error("Could not open file", e);
+                        alert("Could not open the file.");
+                      }
+                    }}
+                  >
+                    View / Download
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </Panel>
+        )}
       </TabsContent>
 
       <TabsContent value="new">
@@ -215,7 +249,7 @@ export function DmsWorkspace({ data, refresh }: { data: Overview; refresh: () =>
                   </div>
                   <div className="flex items-center gap-2">
                     <StatusChip status={result.status} />
-                    {result.status === "draft" ? (
+                    {result.status !== "issued" && result.status !== "approved" ? (
                       <>
                         <Button size="sm" variant="outline" onClick={() => { setDraftId(result.id); setTab("new"); }}>
                           Edit / Continue
@@ -226,7 +260,7 @@ export function DmsWorkspace({ data, refresh }: { data: Overview; refresh: () =>
                           className="text-destructive hover:text-destructive hover:bg-destructive/10" 
                           disabled={deletingId === result.id}
                           onClick={async () => {
-                            if (!window.confirm("Are you sure you want to delete this draft?")) return;
+                            if (!window.confirm("Are you sure you want to delete this submission?")) return;
                             setDeletingId(result.id);
                             try {
                               await deleteDraftFn({ data: { resultId: result.id } });

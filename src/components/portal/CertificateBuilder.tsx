@@ -619,37 +619,42 @@ function TemplateEditorView({ template, onBack }: { template: { id: string, vers
               );
             })()}
             
-            {(() => {
-              const currentCss = activePage === 1 ? customCss : page2CustomCss;
-              return currentCss ? <style dangerouslySetInnerHTML={{ __html: currentCss }} /> : null;
-            })()}
-            
-            {(() => {
-              const currentHtml = activePage === 1 ? customHtml : page2CustomHtml;
-              if (!currentHtml) return null;
-              let renderedHtml = currentHtml;
-              const fieldMap = generatePlaceholderMap(SAMPLE_STUDENT_DATA);
-              
-              const marksTableHtml = `<div style="padding: 10px; border: 1px dashed red; text-align: center; font-weight: bold; background: #ffebeb;">Marks Table Sample</div>`;
-              const summaryTableHtml = `<div style="padding: 10px; border: 1px dashed blue; text-align: center; font-weight: bold; background: #ebf0ff;">Summary Table Sample</div>`;
-              
-              renderedHtml = renderedHtml
-                .replace(/{{ ?marks_table ?}}/g, marksTableHtml)
-                .replace(/{{ ?summary_table ?}}/g, summaryTableHtml)
-                .replace(/{{ ?qr_code ?}}/g, `<img src="${SAMPLE_STUDENT_DATA.verification.qr_code_url}" style="width:100px; height:100px;" alt="QR Code" />`);
+            <iframe 
+              className="absolute inset-0 w-full h-full pointer-events-none border-0" 
+              srcDoc={`
+                <!DOCTYPE html>
+                <html>
+                  <head>
+                    <style>
+                      body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+                      ${activePage === 1 ? customCss : page2CustomCss}
+                    </style>
+                  </head>
+                  <body>
+                    ${(() => {
+                      const currentHtml = activePage === 1 ? customHtml : page2CustomHtml;
+                      if (!currentHtml) return "";
+                      let renderedHtml = currentHtml;
+                      const fieldMap = generatePlaceholderMap(SAMPLE_STUDENT_DATA);
+                      
+                      const marksTableHtml = \`<div style="padding: 10px; border: 1px dashed red; text-align: center; font-weight: bold; background: #ffebeb;">Marks Table Sample</div>\`;
+                      const summaryTableHtml = \`<div style="padding: 10px; border: 1px dashed blue; text-align: center; font-weight: bold; background: #ebf0ff;">Summary Table Sample</div>\`;
+                      
+                      renderedHtml = renderedHtml
+                        .replace(/{{ ?marks_table ?}}/g, marksTableHtml)
+                        .replace(/{{ ?summary_table ?}}/g, summaryTableHtml)
+                        .replace(/{{ ?qr_code ?}}/g, \`<img src="\${SAMPLE_STUDENT_DATA.verification.qr_code_url}" style="width:100px; height:100px;" alt="QR Code" />\`);
 
-              Object.entries(fieldMap).forEach(([key, value]) => {
-                const safeKey = key.replace(/([{}])/g, "\\$1").replace(/ /g, " ?");
-                renderedHtml = renderedHtml.replace(new RegExp(safeKey, "g"), value);
-              });
-
-              return (
-                <div 
-                  className="absolute inset-0 overflow-hidden" 
-                  dangerouslySetInnerHTML={{ __html: renderedHtml }} 
-                />
-              );
-            })()}
+                      Object.entries(fieldMap).forEach(([key, value]) => {
+                        const safeKey = key.replace(/([{}])/g, "\\\\$1").replace(/ /g, " ?");
+                        renderedHtml = renderedHtml.replace(new RegExp(safeKey, "g"), value);
+                      });
+                      return renderedHtml;
+                    })()}
+                  </body>
+                </html>
+              `}
+            />
             
             {activeFields.map((f) => {
               const left = f.xPct * 100 + "%";
