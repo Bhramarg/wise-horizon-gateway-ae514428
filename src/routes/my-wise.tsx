@@ -32,31 +32,11 @@ function MyWise() {
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
-  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
+  function onLoginClick() {
     setPending(true);
-    setMessage(null);
-    try {
-      const payload = {
-        email: String(form.get("email") ?? ""),
-        password: String(form.get("password") ?? ""),
-      };
-      const { data, error } = await supabase.auth.signInWithPassword(payload);
-      if (error) {
-        setMessage("Those credentials don't match an active WISE account.");
-        return;
-      }
-      if (data.user?.user_metadata?.["must_change_password"]) {
-        navigate({ to: "/change-password" });
-        return;
-      }
-      navigate({ to: "/portal" });
-    } catch {
-      setMessage("Something interrupted the request. Please try again.");
-    } finally {
-      setPending(false);
-    }
+    const neonAuthDomain = "https://ep-cold-frost-a7d30q9e.neonauth.ap-southeast-2.aws.neon.tech";
+    const redirectUrl = `${window.location.origin}/auth/callback`;
+    window.location.href = `${neonAuthDomain}/neondb/auth/login?provider=google&redirect_to=${encodeURIComponent(redirectUrl)}`;
   }
 
   return (
@@ -130,25 +110,17 @@ function MyWise() {
               Use the credentials issued by your WISE administrator.
             </p>
 
-            <form onSubmit={onSubmit} className="mt-8 space-y-4">
-              <Field name="email" label="Email" type="email" required />
-              <Field name="password" label="Password" type="password" required />
-
-              {message ? (
-                <p className="rounded-[3px] bg-destructive/8 px-3 py-2 text-[13px] text-destructive">
-                  {message}
-                </p>
-              ) : null}
-
+            <div className="mt-8">
               <Button
-                type="submit"
+                onClick={onLoginClick}
+                type="button"
+                className="w-full h-11"
                 disabled={pending}
-                className="group mt-2 flex w-full items-center justify-center gap-3 rounded-[3px] bg-navy px-5 py-4 text-[11px] font-semibold uppercase tracking-[0.2em] text-white lift disabled:opacity-60"
               >
-                {pending ? "Verifying…" : "Sign in"}
-                <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
+                {pending ? "Redirecting..." : "Sign in with Google"}
+                {!pending && <ArrowRight className="ml-2 w-4 h-4" />}
               </Button>
-            </form>
+            </div>
             <p className="mt-6 text-[12px] leading-relaxed text-muted-foreground">Accounts are created and assigned to institutions by a WISE administrator. Public registration is disabled.</p>
           </div>
 

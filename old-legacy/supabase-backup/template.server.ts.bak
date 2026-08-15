@@ -7,11 +7,11 @@ import type { SupabaseClient } from "@supabase/supabase-js";
  * Builds the final, self-contained HTML string suitable for Puppeteer to render.
  */
 export async function buildFinalHtml(
+  client: SupabaseClient,
   templateVersionId: string,
   studentData: NormalizedCertificateData
 ): Promise<string> {
-  const { getTemplateVersion } = await import("../../backend/repositories/builder.repository.js");
-  const template = await getTemplateVersion(templateVersionId);
+  const template = await getTemplateVersion(client, templateVersionId);
   if (!template) throw new Error(`Template version ${templateVersionId} not found.`);
 
   // 1. Generate QR Code once
@@ -28,8 +28,9 @@ export async function buildFinalHtml(
     if (bgPath.startsWith("http") || bgPath.startsWith("data:")) {
       return `background-image: url('${bgPath}');`;
     }
-    const { StorageService } = await import("../../backend/services/storage.js");
-    return `background-image: url('${StorageService.getPublicUrl(bgPath)}');`;
+    const { data, error } = await client.storage.from("student-files").createSignedUrl(bgPath, 60);
+    if (error) throw error;
+    return `background-image: url('${data.signedUrl}');`;
   }
 
   function resolvePlaceholders(sourceHtml: string) {

@@ -21,6 +21,7 @@ import { Route as AboutChairpersonRouteImport } from './routes/about/chairperson
 import { Route as AboutFaqRouteImport } from './routes/about/faq'
 import { Route as AboutGoverningBodyRouteImport } from './routes/about/governing-body'
 import { Route as AboutVisionRouteImport } from './routes/about/vision'
+import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
 import { Route as VerifyCodeRouteImport } from './routes/verify.$code'
 
 const IndexRoute = IndexRouteImport.update({
@@ -83,6 +84,11 @@ const AboutVisionRoute = AboutVisionRouteImport.update({
   path: '/about/vision',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/auth/callback',
+  path: '/auth/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const VerifyCodeRoute = VerifyCodeRouteImport.update({
   id: '/verify/$code',
   path: '/verify/$code',
@@ -101,6 +107,7 @@ export interface FileRoutesByFullPath {
   '/about/faq': typeof AboutFaqRoute
   '/about/governing-body': typeof AboutGoverningBodyRoute
   '/about/vision': typeof AboutVisionRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/verify/$code': typeof VerifyCodeRoute
 }
 export interface FileRoutesByTo {
@@ -115,6 +122,7 @@ export interface FileRoutesByTo {
   '/about/faq': typeof AboutFaqRoute
   '/about/governing-body': typeof AboutGoverningBodyRoute
   '/about/vision': typeof AboutVisionRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/verify/$code': typeof VerifyCodeRoute
 }
 export interface FileRoutesById {
@@ -131,6 +139,7 @@ export interface FileRoutesById {
   '/about/faq': typeof AboutFaqRoute
   '/about/governing-body': typeof AboutGoverningBodyRoute
   '/about/vision': typeof AboutVisionRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/verify/$code': typeof VerifyCodeRoute
 }
 export interface FileRouteTypes {
@@ -147,6 +156,7 @@ export interface FileRouteTypes {
     | '/about/faq'
     | '/about/governing-body'
     | '/about/vision'
+    | '/auth/callback'
     | '/verify/$code'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -161,6 +171,7 @@ export interface FileRouteTypes {
     | '/about/faq'
     | '/about/governing-body'
     | '/about/vision'
+    | '/auth/callback'
     | '/verify/$code'
   id:
     | '__root__'
@@ -176,6 +187,7 @@ export interface FileRouteTypes {
     | '/about/faq'
     | '/about/governing-body'
     | '/about/vision'
+    | '/auth/callback'
     | '/verify/$code'
   fileRoutesById: FileRoutesById
 }
@@ -188,6 +200,7 @@ export interface RootRouteChildren {
   AboutFaqRoute: typeof AboutFaqRoute
   AboutGoverningBodyRoute: typeof AboutGoverningBodyRoute
   AboutVisionRoute: typeof AboutVisionRoute
+  AuthCallbackRoute: typeof AuthCallbackRoute
   VerifyCodeRoute: typeof VerifyCodeRoute
 }
 
@@ -277,6 +290,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AboutVisionRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/auth/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/verify/$code': {
       id: '/verify/$code'
       path: '/verify/$code'
@@ -313,6 +333,7 @@ const rootRouteChildren: RootRouteChildren = {
   AboutFaqRoute: AboutFaqRoute,
   AboutGoverningBodyRoute: AboutGoverningBodyRoute,
   AboutVisionRoute: AboutVisionRoute,
+  AuthCallbackRoute: AuthCallbackRoute,
   VerifyCodeRoute: VerifyCodeRoute,
 }
 export const routeTree = rootRouteImport

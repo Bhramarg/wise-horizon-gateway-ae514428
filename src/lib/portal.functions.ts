@@ -1,24 +1,23 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireAuth } from "./auth-middleware";
 
 export const getPortalOverview = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .handler(async ({ context }) => {
-    const { getPortalOverviewForUser } = await import("./portal.server");
-    return getPortalOverviewForUser(context.supabase, context.userId, context.claims.email as string | undefined);
+    const { getPortalOverview } = await import("../../backend/repositories/portal.repository.js");
+    return getPortalOverview(context.userId);
   });
 
 export const claimFirstAdmin = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .handler(async ({ context }) => {
     const { claimInitialAdmin } = await import("./portal.server");
     return claimInitialAdmin(context.userId);
   });
 
 export const createInstitution = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .inputValidator((input: unknown) =>
     z.object({ name: z.string().min(2).max(160), code: z.string().min(2).max(24) }).parse(input),
   )
@@ -28,7 +27,7 @@ export const createInstitution = createServerFn({ method: "POST" })
   });
 
 export const addInstitutionDocument = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .inputValidator((input: unknown) =>
     z.object({
       institutionId: z.string().uuid(),
@@ -43,7 +42,7 @@ export const addInstitutionDocument = createServerFn({ method: "POST" })
   });
 
 export const createDmsUser = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .inputValidator((input: unknown) =>
     z
       .object({ email: z.string().email(), password: z.string().min(8).max(128), institutionId: z.string().uuid() })
@@ -55,7 +54,7 @@ export const createDmsUser = createServerFn({ method: "POST" })
   });
 
 export const saveSubjectDefinition = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .inputValidator((input: unknown) =>
     z
       .object({
@@ -73,27 +72,27 @@ export const saveSubjectDefinition = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { saveSubject } = await import("./portal.server");
+    const { saveSubject } = await import("../../backend/repositories/portal.repository.js");
     return saveSubject(context.supabase, context.userId, data);
   });
 
 export const deleteSubjectDefinition = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { removeSubject } = await import("./portal.server");
     return removeSubject(context.supabase, context.userId, data.id);
   });
 export const deleteDraftResult = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .inputValidator((input: unknown) => z.object({ resultId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    const { deleteDraftResult: deleteDraftResultSrv } = await import("./portal.server");
-    return deleteDraftResultSrv(context.supabase, context.userId, data.resultId);
+    const { deleteDraftResult } = await import("../../backend/repositories/portal.repository.js");
+    return deleteDraftResult(context.userId, data.resultId);
   });
 
 export const createStudent = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .inputValidator((input: unknown) =>
     z
       .object({
@@ -125,14 +124,13 @@ export const createStudent = createServerFn({ method: "POST" })
       })
       .parse(input),
   )
-  .handler(async ({ data, context }) => {
-    const { addStudent } = await import("./portal.server");
-    const { id, ...rest } = data;
-    return addStudent(context.supabase, context.userId, id ? { id, ...rest } : rest);
+  .handler(async ({ data: { id, ...rest }, context }) => {
+    const { addStudent } = await import("../../backend/repositories/portal.repository.js");
+    return addStudent(context.userId, id ? { id, ...rest } : rest);
   });
 
 export const createResult = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .inputValidator((input: unknown) =>
     z
       .object({
@@ -163,15 +161,15 @@ export const createResult = createServerFn({ method: "POST" })
   });
 
 export const submitResult = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .inputValidator((input: unknown) => z.object({ resultId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    const { submitResultForEvaluation } = await import("./portal.server");
-    return submitResultForEvaluation(context.supabase, context.userId, data.resultId);
+    const { submitResultForEvaluation } = await import("../../backend/repositories/portal.repository.js");
+    return submitResultForEvaluation(context.userId, data.resultId);
   });
 
 export const attachPortfolioFile = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .inputValidator((input: unknown) => z.object({ resultId: z.string().uuid(), path: z.string().min(3).max(300) }).parse(input))
   .handler(async ({ data, context }) => {
     const { attachPortfolio } = await import("./portal.server");
@@ -179,7 +177,7 @@ export const attachPortfolioFile = createServerFn({ method: "POST" })
   });
 
 export const generatePortfolioKey = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .inputValidator((input: unknown) => z.object({ resultId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { issuePortfolioKey } = await import("./portal.server");
@@ -187,7 +185,7 @@ export const generatePortfolioKey = createServerFn({ method: "POST" })
   });
 
 export const prepareCertificateTag = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .inputValidator((input: unknown) => z.object({ resultId: z.string().uuid(), origin: z.string().url() }).parse(input))
   .handler(async ({ data, context }) => {
     const { prepareTag } = await import("./portal.server");
@@ -195,7 +193,7 @@ export const prepareCertificateTag = createServerFn({ method: "POST" })
   });
 
 export const recordTagWrite = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .inputValidator((input: unknown) =>
     z.object({ tagId: z.string().uuid(), serialNumber: z.string().max(200).optional(), locked: z.boolean() }).parse(input),
   )
@@ -205,7 +203,7 @@ export const recordTagWrite = createServerFn({ method: "POST" })
   });
 
 export const testCertificateTag = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .inputValidator((input: unknown) => z.object({ tagId: z.string().uuid(), payload: z.string().min(4).max(600) }).parse(input))
   .handler(async ({ data, context }) => {
     const { recordTagTest } = await import("./portal.server");
@@ -213,7 +211,7 @@ export const testCertificateTag = createServerFn({ method: "POST" })
   });
 
 export const revokeCertificateTag = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .inputValidator((input: unknown) => z.object({ tagId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { revokeTag } = await import("./portal.server");
@@ -221,7 +219,7 @@ export const revokeCertificateTag = createServerFn({ method: "POST" })
   });
 
 export const updateResultStatus = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .inputValidator((input: unknown) =>
     z
       .object({
@@ -232,12 +230,12 @@ export const updateResultStatus = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { setResultStatus } = await import("./portal.server");
-    return setResultStatus(context.supabase, context.userId, data);
+    const { setResultStatus } = await import("../../backend/repositories/portal.repository.js");
+    return setResultStatus(context.userId, data);
   });
 
 export const deleteResult = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .inputValidator((input: unknown) => z.object({ resultId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { deleteResultAsAdmin } = await import("./portal.server");
@@ -245,7 +243,7 @@ export const deleteResult = createServerFn({ method: "POST" })
   });
 
 export const getSignedFile = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .inputValidator((input: unknown) =>
     z.object({ bucket: z.enum(["student-files", "portfolios", "institution-files"]), path: z.string().min(3).max(300) }).parse(input),
   )
@@ -271,7 +269,7 @@ export const redeemPortfolio = createServerFn({ method: "POST" })
   });
 
 export const saveCertificateLayout = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .inputValidator((input: unknown) =>
     z.object({ level: z.string(), background_url: z.string().optional(), fields: z.any() }).parse(input),
   )
@@ -285,7 +283,7 @@ export const saveCertificateLayout = createServerFn({ method: "POST" })
   });
 
 export const getCertificateLayout = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .inputValidator((input: unknown) => z.object({ level: z.string() }).parse(input))
   .handler(async ({ data, context }) => {
     const { getCertificateLayout: getLayout } = await import("./portal.server");
@@ -294,14 +292,14 @@ export const getCertificateLayout = createServerFn({ method: "POST" })
 
 // --- NEW PHASE 7 TEMPLATE CRUD ---
 export const listCertificateTemplates = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .handler(async ({ context }) => {
     const { listCertificateTemplates: list } = await import("./portal.templates.server");
     return list(context.supabase);
   });
 
 export const createCertificateTemplate = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .inputValidator((input: unknown) => 
     z.object({ name: z.string(), type: z.string(), level: z.string() }).parse(input)
   )
@@ -311,7 +309,7 @@ export const createCertificateTemplate = createServerFn({ method: "POST" })
   });
 
 export const saveTemplateVersion = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .inputValidator((input: unknown) => 
     z.object({ 
       version_id: z.string().uuid(), 
@@ -330,7 +328,7 @@ export const saveTemplateVersion = createServerFn({ method: "POST" })
   });
 
 export const getTemplateVersion = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .inputValidator((input: unknown) => 
     z.object({ version_id: z.string().uuid() }).parse(input)
   )
@@ -340,7 +338,7 @@ export const getTemplateVersion = createServerFn({ method: "POST" })
   });
 
 export const publishTemplate = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .inputValidator((input: unknown) => z.object({ template_id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { publishTemplate: publish } = await import("./portal.templates.server");
@@ -348,7 +346,7 @@ export const publishTemplate = createServerFn({ method: "POST" })
   });
 
 export const generatePdfPreview = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .inputValidator((input: unknown) => z.object({ version_id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { buildFinalHtml } = await import("./template.server");
@@ -356,7 +354,7 @@ export const generatePdfPreview = createServerFn({ method: "POST" })
     const { SAMPLE_STUDENT_DATA } = await import("@/components/portal/CertificateBuilder");
 
     // Build the finalized HTML string by injecting sample data
-    const html = await buildFinalHtml(context.supabase, data.version_id, SAMPLE_STUDENT_DATA);
+    const html = await buildFinalHtml(data.version_id, SAMPLE_STUDENT_DATA);
 
     // Render it via Puppeteer
     const pdfBuffer = await generateCertificatePdf(html);

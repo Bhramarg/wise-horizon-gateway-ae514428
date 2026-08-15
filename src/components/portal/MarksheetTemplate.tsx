@@ -203,10 +203,25 @@ export const MarksheetTemplate = React.forwardRef<HTMLDivElement, MarksheetTempl
             aspectRatio: "1404 / 2047"
           }}
         >
-          {customCss && <style dangerouslySetInnerHTML={{ __html: customCss }} />}
           
           {customHtml ? (
-             <div className="absolute inset-0 z-0" dangerouslySetInnerHTML={{ __html: renderedHtml }} />
+             <iframe 
+               className="absolute inset-0 z-0 w-full h-full border-0 pointer-events-none" 
+               srcDoc={`
+                 <!DOCTYPE html>
+                 <html>
+                   <head>
+                     <style>
+                       body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+                       ${customCss || ""}
+                     </style>
+                   </head>
+                   <body>
+                     ${renderedHtml}
+                   </body>
+                 </html>
+               `}
+             />
           ) : (
             <>
               {(!elements || elements.length === 0) && (
