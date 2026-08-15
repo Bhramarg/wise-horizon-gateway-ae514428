@@ -637,13 +637,14 @@ function TemplateEditorView({ template, onBack }: { template: { id: string, vers
                       let renderedHtml = currentHtml;
                       const fieldMap = generatePlaceholderMap(SAMPLE_STUDENT_DATA);
                       
-                      const marksTableHtml = \`<div style="padding: 10px; border: 1px dashed red; text-align: center; font-weight: bold; background: #ffebeb;">Marks Table Sample</div>\`;
-                      const summaryTableHtml = \`<div style="padding: 10px; border: 1px dashed blue; text-align: center; font-weight: bold; background: #ebf0ff;">Summary Table Sample</div>\`;
+                      const marksTableHtml = '<div style="padding: 10px; border: 1px dashed red; text-align: center; font-weight: bold; background: #ffebeb;">Marks Table Sample</div>';
+                      const summaryTableHtml = '<div style="padding: 10px; border: 1px dashed blue; text-align: center; font-weight: bold; background: #ebf0ff;">Summary Table Sample</div>';
                       
+                      const qrSrc = SAMPLE_STUDENT_DATA.verification.qr_code_url;
                       renderedHtml = renderedHtml
                         .replace(/{{ ?marks_table ?}}/g, marksTableHtml)
                         .replace(/{{ ?summary_table ?}}/g, summaryTableHtml)
-                        .replace(/{{ ?qr_code ?}}/g, \`<img src="\${SAMPLE_STUDENT_DATA.verification.qr_code_url}" style="width:100px; height:100px;" alt="QR Code" />\`);
+                        .replace(/{{ ?qr_code ?}}/g, '<img src="' + qrSrc + '" style="width:100px; height:100px;" alt="QR Code" />');
 
                       Object.entries(fieldMap).forEach(([key, value]) => {
                         const safeKey = key.replace(/([{}])/g, "\\\\$1").replace(/ /g, " ?");
