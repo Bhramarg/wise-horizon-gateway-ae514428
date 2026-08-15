@@ -3,15 +3,21 @@ import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
 import { User } from './models.js';
 
-dotenv.config();
+import path from 'path';
+dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
 let isConnected = false;
 
 export async function connectDB() {
   if (isConnected) return;
   
+  // Debug output
+  console.log("CWD:", process.cwd());
+  console.log("Has MONGODB_URI in process.env:", !!process.env.MONGODB_URI);
+  console.log("Has JWT_SECRET in process.env:", !!process.env.JWT_SECRET);
+
   const uri = process.env.MONGODB_URI;
-  if (!uri) throw new Error("MONGODB_URI is not defined");
+  if (!uri) throw new Error(`MONGODB_URI is not defined. CWD is ${process.cwd()}. Env keys: ${Object.keys(process.env).join(', ')}`);
   
   await mongoose.connect(uri);
   isConnected = true;
