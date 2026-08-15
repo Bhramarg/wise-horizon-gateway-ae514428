@@ -6,7 +6,7 @@ import { Reveal } from "@/components/site/motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import heroImage from "@/assets/wise-hero.jpg";
-import { supabase } from "@/integrations/supabase/client";
+import { loginFn } from "@/lib/auth.functions";
 
 export const Route = createFileRoute("/my-wise")({
   head: () => {
@@ -32,38 +32,26 @@ function MyWise() {
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
-  async function onLoginClick() {
+  async function onLogin(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
     setPending(true);
     setMessage(null);
+    
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+
     try {
-      const neonAuthDomain = "https://ep-cold-frost-a7d30q9e.neonauth.ap-southeast-2.aws.neon.tech";
-      const redirectUrl = `${window.location.origin}/auth/callback`;
+      const result = await loginFn({ data: { email, password } });
       
-      const response = await fetch(`${neonAuthDomain}/neondb/auth/sign-in/social`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Origin": window.location.origin
-        },
-        body: JSON.stringify({
-          provider: "google",
-          callbackURL: redirectUrl
-        })
-      });
-      
-      if (!response.ok) {
-        throw new Error(await response.text());
-      }
-      
-      const data = await response.json();
-      if (data.url) {
-        window.location.href = data.url;
+      if (result.requiresPasswordChange) {
+        navigate({ to: "/auth/change-password" });
       } else {
-        throw new Error("No redirect URL returned from Neon Auth");
+        navigate({ to: "/portal" });
       }
     } catch (err: any) {
       console.error(err);
-      setMessage("Login failed: " + err.message);
+      setMessage("Login failed: " + (err.message || "Invalid credentials"));
       setPending(false);
     }
   }
@@ -139,17 +127,27 @@ function MyWise() {
               Use the credentials issued by your WISE administrator.
             </p>
 
-            <div className="mt-8">
-              <Button
-                onClick={onLoginClick}
-                type="button"
-                className="w-full h-11"
-                disabled={pending}
-              >
-                {pending ? "Redirecting..." : "Sign in with Google"}
-                {!pending && <ArrowRight className="ml-2 w-4 h-4" />}
-              </Button>
-            </div>
+            <form onSubmit={onLogin} className="mt-8 space-y-4">
+              {message && (
+                <div className="p-3 text-sm text-red-600 bg-red-50 rounded border border-red-200">
+                  {message}
+                </div>
+              )}
+              
+              <Field name="email" label="Email Address" type="email" required />
+              <Field name="password" label="Password" type="password" required />
+
+              <div className="mt-8">
+                <Button
+                  type="submit"
+                  className="w-full h-11"
+                  disabled={pending}
+                >
+                  {pending ? "Signing in..." : "Sign in"}
+                  {!pending && <ArrowRight className="ml-2 w-4 h-4" />}
+                </Button>
+              </div>
+            </form>
             <p className="mt-6 text-[12px] leading-relaxed text-muted-foreground">Accounts are created and assigned to institutions by a WISE administrator. Public registration is disabled.</p>
           </div>
 

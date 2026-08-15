@@ -1,11 +1,5 @@
 import { createMiddleware } from '@tanstack/react-start';
 import { getCookie } from '@tanstack/react-start/server';
-import { createRemoteJWKSet, jwtVerify } from 'jose';
-import { query } from '../../backend/database/db';
-
-const NEON_AUTH_DOMAIN = "https://ep-cold-frost-a7d30q9e.neonauth.ap-southeast-2.aws.neon.tech";
-const JWKS_URL = new URL(`${NEON_AUTH_DOMAIN}/.well-known/jwks.json`);
-const JWKS = createRemoteJWKSet(JWKS_URL);
 
 export interface AuthContext {
   userId: string;
@@ -15,55 +9,46 @@ export interface AuthContext {
 
 export const requireAuth = createMiddleware({ type: 'function' }).server(
   async ({ next }) => {
-    // 1. Get the Neon Auth token from the cookie
-    const token = getCookie('neon_access_token');
+    const { connectDB } = await import('../../backend/database/db.js');
+    const { User } = await import('../../backend/database/models.js');
+    const jwt = (await import('jsonwebtoken')).default;
+
+    // 1. Get the session token from the cookie
+    const token = getCookie('auth_token');
     
     if (!token) {
-      throw new Error('Unauthorized: No neon_access_token cookie found');
+      throw new Error('Unauthorized: No auth_token cookie found');
     }
 
     try {
-      // 2. Verify JWT signature against Neon Auth JWKS
-      const { payload } = await jwtVerify(token, JWKS);
-      const userId = payload.sub;
-      const email = payload.email as string;
+      // 2. Verify JWT signature against our secret
+      const secret = process.env.JWT_SECRET;
+      if (!secret) throw new Error("JWT_SECRET is not configured");
 
-      if (!userId || !email) {
-        throw new Error("Invalid token payload: missing sub or email");
+      const decoded = jwt.verify(token, secret) as any;
+      const userId = decoded.userId;
+
+      if (!userId) {
+        throw new Error("Invalid token payload: missing userId");
       }
 
-      // 3. Ensure user exists in our Neon DB and get roles
-      const userRes = await query("SELECT id FROM public.users WHERE email = $1", [email]);
-      let internalUserId = "";
+      await connectDB();
+      const user = await User.findById(userId);
 
-      if (userRes.rows.length === 0) {
-        // First time login via Neon Auth, register them in our DB
-        const insertRes = await query(
-          "INSERT INTO public.users (id, email, password_hash) VALUES ($1, $2, $3) RETURNING id",
-          [userId, email, "oauth-managed"]
-        );
-        internalUserId = insertRes.rows[0].id;
-      } else {
-        internalUserId = userRes.rows[0].id;
+      if (!user) {
+        throw new Error("User no longer exists");
       }
 
-      const rolesRes = await query(
-        "SELECT role FROM public.user_roles WHERE user_id = $1",
-        [internalUserId]
-      );
+      const context: AuthContext = {
+        userId: user._id.toString(),
+        email: user.email,
+        roles: user.roles || []
+      };
 
-      const roles = rolesRes.rows.map((r) => r.role);
-
-      return next({
-        context: {
-          userId: internalUserId,
-          email,
-          roles,
-        },
-      });
-    } catch (err: any) {
-      console.error("Token verification failed:", err);
-      throw new Error("Unauthorized: " + err.message);
+      return next({ context });
+    } catch (err) {
+      console.error("Auth Middleware Error:", err);
+      throw new Error('Unauthorized');
     }
   }
 );

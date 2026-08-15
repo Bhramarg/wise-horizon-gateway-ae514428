@@ -62,6 +62,7 @@
     "jsonwebtoken": "^9.0.3",
     "jspdf": "^4.2.1",
     "lucide-react": "^0.575.0",
+    "mongoose": "^9.9.2",
     "multer": "^2.2.0",
     "pg": "^8.23.0",
     "puppeteer": "^24.43.1",

@@ -11,8 +11,14 @@ export default defineConfig({
     server: { entry: "server" },
   },
   vite: {
+    resolve: {
+      alias: {
+        "punycode/": "punycode"
+      }
+    },
     ssr: {
       noExternal: ["@tanstack/react-start", "@tanstack/react-router"],
+      external: ["mongoose", "mongodb", "bcryptjs"],
     },
   },
 });

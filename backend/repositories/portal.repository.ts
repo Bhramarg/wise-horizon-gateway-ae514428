@@ -1,102 +1,130 @@
-import { query } from "../database/db.js";
+import { User, Institution, Student, Result, CertificateTag, Subject } from "../database/models.js";
+import { connectDB } from "../database/db.js";
 
 export async function getPortalOverview(userId: string) {
-  // 1. Get roles
-  const rolesRes = await query("SELECT role FROM user_roles WHERE user_id = $1", [userId]);
-  const role = rolesRes.rows.some((r) => r.role === "admin") ? "admin" : 
-               rolesRes.rows.some((r) => r.role === "dms") ? "dms" : null;
+  await connectDB();
 
-  // 2. Get Memberships
-  const memRes = await query(`
-    SELECT m.institution_id, m.active, 
-           i.id, i.name, i.code, i.status as active
-    FROM institution_members m
-    JOIN institutions i ON i.id = m.institution_id
-    WHERE m.user_id = $1
-  `, [userId]);
+  // 1. Get user roles
+  const user = await User.findById(userId);
+  const role = user?.roles?.includes("admin") ? "admin" : 
+               user?.roles?.includes("dms") ? "dms" : null;
 
-  const institutionsRes = await query("SELECT id, name, code, status as active, documents FROM institutions ORDER BY name");
-  const studentsRes = await query(`
-    SELECT id, institution_id, student_number, full_name, date_of_birth, created_at, status
-    FROM students
-    ORDER BY created_at DESC LIMIT 200
-  `);
-  const resultsRes = await query(`
-    SELECT r.id, r.institution_id, r.student_id, r.qualification, r.academic_period, r.grade, r.status, r.verification_code, r.portfolio_path, r.issued_at, r.created_at,
-           s.full_name as student_full_name, s.student_number, s.date_of_birth
-    FROM results r
-    JOIN students s ON s.id = r.student_id
-    ORDER BY r.created_at DESC LIMIT 200
-  `);
-  const tagsRes = await query("SELECT id, result_id, tag_uid as ndef_payload, status, locked_at, write_count as write_counter FROM certificate_tags ORDER BY created_at DESC LIMIT 200");
-  const subjectsRes = await query("SELECT id, name, code FROM subjects ORDER BY name"); // Wait, does subjects table exist?
+  // 2. Get Memberships (Institutions where user is active)
+  const institutions = await Institution.find().sort({ name: 1 });
+  const memberships = institutions
+    .filter(i => i.members.some(m => m.user_id.toString() === userId && m.active))
+    .map(i => ({
+      institution_id: i._id,
+      active: i.status === 'active',
+      id: i._id,
+      name: i.name,
+      code: i.code
+    }));
+
+  const students = await Student.find().sort({ created_at: -1 }).limit(200);
+  
+  const resultsData = await Result.find().populate('student_id').sort({ created_at: -1 }).limit(200);
+  const tags = await CertificateTag.find().sort({ created_at: -1 }).limit(200);
+  const subjects = await Subject.find().sort({ name: 1 });
 
   return {
     role,
     userId,
     profile: null,
-    institutions: institutionsRes.rows,
-    memberships: memRes.rows,
-    students: studentsRes.rows.map(s => ({ ...s, programme: "", metadata: {}, caste: "", face_id_number: "", address: "", guardians: [] })),
-    results: resultsRes.rows.map(r => ({
-      ...r,
-      students: {
-        full_name: r.student_full_name,
-        student_number: r.student_number,
-        date_of_birth: r.date_of_birth,
-      }
+    institutions: institutions.map(i => ({ id: i._id, name: i.name, code: i.code, active: i.status === 'active', documents: i.documents })),
+    memberships,
+    students: students.map(s => ({
+      id: s._id,
+      institution_id: s.institution_id,
+      student_number: s.student_number,
+      full_name: s.full_name,
+      date_of_birth: s.date_of_birth,
+      created_at: s.created_at,
+      status: s.status,
+      programme: "", metadata: {}, caste: "", face_id_number: "", address: s.address || "", guardians: []
     })),
-    tags: tagsRes.rows,
-    subjects: subjectsRes.rows || [],
+    results: resultsData.map(r => {
+      const student = r.student_id as any;
+      return {
+        id: r._id,
+        institution_id: r.institution_id,
+        student_id: r.student_id,
+        qualification: r.qualification,
+        academic_period: r.academic_period,
+        grade: r.grade,
+        status: r.status,
+        verification_code: r.verification_code,
+        portfolio_path: r.portfolio_path,
+        issued_at: r.issued_at,
+        created_at: r.created_at,
+        students: {
+          full_name: student?.full_name,
+          student_number: student?.student_number,
+          date_of_birth: student?.date_of_birth,
+        }
+      }
+    }),
+    tags: tags.map(t => ({
+      id: t._id, result_id: t.result_id, ndef_payload: t.tag_uid, status: t.status, locked_at: t.locked_at, write_counter: t.write_count
+    })),
+    subjects: subjects.map(s => ({ id: s._id, name: s.name, code: s.code })),
     layouts: []
   };
 }
 
 export async function addStudent(userId: string, input: any) {
-  const { institutionId, studentNumber, fullName, dateOfBirth, gender, nationalId, email, phone, address, enrollmentDate } = input;
-  const res = await query(`
-    INSERT INTO students (institution_id, student_number, full_name, date_of_birth, gender, national_id, email, phone, address, enrollment_date, created_by)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-    RETURNING *
-  `, [institutionId, studentNumber, fullName, dateOfBirth, gender, nationalId, email, phone, address, enrollmentDate, userId]);
-  return res.rows[0];
+  await connectDB();
+  const student = await Student.create({
+    institution_id: input.institutionId,
+    student_number: input.studentNumber,
+    full_name: input.fullName,
+    date_of_birth: input.dateOfBirth,
+    gender: input.gender,
+    national_id: input.nationalId,
+    email: input.email,
+    phone: input.phone,
+    address: input.address,
+    enrollment_date: input.enrollmentDate,
+    created_by: userId
+  });
+  return { ...student.toObject(), id: student._id };
 }
 
 export async function addResult(userId: string, input: any) {
-  const { studentId, institutionId, academicPeriod, qualification, grade } = input;
-  const res = await query(`
-    INSERT INTO results (student_id, institution_id, academic_period, qualification, grade, created_by, status)
-    VALUES ($1, $2, $3, $4, $5, $6, 'draft')
-    RETURNING *
-  `, [studentId, institutionId, academicPeriod, qualification, grade, userId]);
-  
-  // also add subjects if provided
-  if (input.subjects && input.subjects.length > 0) {
-    for (const sub of input.subjects) {
-      await query(`
-        INSERT INTO result_subjects (result_id, subject_code, subject_name, score)
-        VALUES ($1, $2, $3, $4)
-      `, [res.rows[0].id, sub.code, sub.name, sub.score]);
-    }
-  }
-  return res.rows[0];
+  await connectDB();
+  const result = await Result.create({
+    student_id: input.studentId,
+    institution_id: input.institutionId,
+    academic_period: input.academicPeriod,
+    qualification: input.qualification,
+    grade: input.grade,
+    created_by: userId,
+    status: 'draft',
+    subjects: input.subjects || []
+  });
+  return { ...result.toObject(), id: result._id };
 }
 
 export async function submitResultForEvaluation(userId: string, resultId: string) {
-  await query("UPDATE results SET status = 'submitted' WHERE id = $1", [resultId]);
+  await connectDB();
+  await Result.findByIdAndUpdate(resultId, { status: 'submitted' });
 }
 
 export async function setResultStatus(userId: string, input: { resultId: string, status: string, note?: string }) {
-  await query("UPDATE results SET status = $1, review_note = $2 WHERE id = $3", [input.status, input.note || "", input.resultId]);
+  await connectDB();
+  await Result.findByIdAndUpdate(input.resultId, { 
+    status: input.status, 
+    review_note: input.note || "" 
+  });
 }
 
 export async function deleteDraftResult(userId: string, resultId: string) {
-  // Allow deleting if status is draft or revoked
-  const check = await query("SELECT status FROM results WHERE id = $1", [resultId]);
-  if (check.rows.length === 0) throw new Error("Result not found");
-  const status = check.rows[0].status;
-  if (status !== 'draft' && status !== 'revoked') {
+  await connectDB();
+  const result = await Result.findById(resultId);
+  if (!result) throw new Error("Result not found");
+  
+  if (result.status !== 'draft' && result.status !== 'revoked') {
     throw new Error("Only draft or revoked results can be deleted");
   }
-  await query("DELETE FROM results WHERE id = $1", [resultId]);
+  await Result.findByIdAndDelete(resultId);
 }
