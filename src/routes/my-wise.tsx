@@ -32,11 +32,40 @@ function MyWise() {
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
-  function onLoginClick() {
+  async function onLoginClick() {
     setPending(true);
-    const neonAuthDomain = "https://ep-cold-frost-a7d30q9e.neonauth.ap-southeast-2.aws.neon.tech";
-    const redirectUrl = `${window.location.origin}/auth/callback`;
-    window.location.href = `${neonAuthDomain}/neondb/auth/login?provider=google&redirect_to=${encodeURIComponent(redirectUrl)}`;
+    setMessage(null);
+    try {
+      const neonAuthDomain = "https://ep-cold-frost-a7d30q9e.neonauth.ap-southeast-2.aws.neon.tech";
+      const redirectUrl = `${window.location.origin}/auth/callback`;
+      
+      const response = await fetch(`${neonAuthDomain}/neondb/auth/sign-in/social`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Origin": window.location.origin
+        },
+        body: JSON.stringify({
+          provider: "google",
+          callbackURL: redirectUrl
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+      
+      const data = await response.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error("No redirect URL returned from Neon Auth");
+      }
+    } catch (err: any) {
+      console.error(err);
+      setMessage("Login failed: " + err.message);
+      setPending(false);
+    }
   }
 
   return (
