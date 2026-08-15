@@ -1,6 +1,5 @@
 import { getTemplateVersion } from "./portal.templates.server";
 import { generatePlaceholderMap, NormalizedCertificateData } from "./certificateEngine";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import QRCode from "qrcode";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -29,7 +28,7 @@ export async function buildFinalHtml(
     if (bgPath.startsWith("http") || bgPath.startsWith("data:")) {
       return `background-image: url('${bgPath}');`;
     }
-    const { data, error } = await supabaseAdmin.storage.from("student-files").createSignedUrl(bgPath, 60);
+    const { data, error } = await client.storage.from("student-files").createSignedUrl(bgPath, 60);
     if (error) throw error;
     return `background-image: url('${data.signedUrl}');`;
   }
